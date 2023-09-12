@@ -4,14 +4,25 @@
 
 #include "public/file/file_manager.h"
 #include "private/file/file_manager.h"
+#include "public/error/errors_common.h"
+#include <errno.h>
 #include <malloc.h>
+#include <string.h>
 #include <unistd.h>
+
+const char *const error_source = "FILE_MANAGER";
+const char *const error_type = "FILE_MANAGER_ERROR";
+
+static struct error *error_self() {
+  return error_new(error_source, error_type, (error_code_t){errno},
+                   strerror(errno));
+}
 
 struct file_manager *file_manager_new() {
   return malloc(sizeof(struct file_manager));
 }
 
-result_t file_manager_ctor(struct file_manager *file_manager, char *file_name) {
+result_t file_manager_ctor(struct file_manager *self, char *file_name) {
   bool file_exists = access(file_name, F_OK) == 0;
   if (!file_exists) {
     // TODO think
@@ -21,44 +32,45 @@ result_t file_manager_ctor(struct file_manager *file_manager, char *file_name) {
   FILE *file = fopen(file_name, "r+");
 
   if (file == NULL) {
-    free(file_manager);
-    return RESULT_ERR;
+    free(self);
+    return result_err(error_self());
   }
 
-  file_manager->file = file;
-  file_manager->is_new = !file_exists;
-  return RESULT_OK;
+  self->file = file;
+  self->is_new = !file_exists;
+  return result_ok();
 }
 
-bool file_manager_is_file_new(struct file_manager *file_manager) {
-  return file_manager->is_new;
+bool file_manager_is_file_new(struct file_manager *self) {
+  return self->is_new;
 }
 
-result_t file_manager_read(struct file_manager *file_manager, size_t size,
+result_t file_manager_read(struct file_manager *self, size_t size,
                            uint32_t offset, void *data) {
-  if (file_manager == NULL)
-    return RESULT_ERR;
-  if (fseek(file_manager->file, offset, SEEK_SET) != 0)
-    return RESULT_ERR;
+  if (self == NULL)
+    return result_err(error_common(error_source, ERR_COMMON_NULL_POINTER));
+  if (fseek(self->file, offset, SEEK_SET) != 0) {
+    return result_err(error_self());
+  }
 
-  if (fread(data, size, 1, file_manager->file) == 0)
-    return RESULT_ERR;
-  return RESULT_OK;
+  if (fread(data, size, 1, self->file) == 0)
+    return result_err(error_self()); // TODO think
+  return result_ok();
 }
 
-result_t file_manager_write(struct file_manager *file_manager, size_t size,
+result_t file_manager_write(struct file_manager *self, size_t size,
                             uint32_t offset, void *data) {
-  if (file_manager == NULL)
-    return RESULT_ERR;
-  if (fseek(file_manager->file, offset, SEEK_SET) != 0)
-    return RESULT_ERR;
+  if (self == NULL)
+    return result_err(error_common(error_source, ERR_COMMON_NULL_POINTER));
+  if (fseek(self->file, offset, SEEK_SET) != 0)
+    return result_err(error_self());
 
-  if (fwrite(data, size, 1, file_manager->file) == 0)
-    return RESULT_ERR;
-  return RESULT_OK;
+  if (fwrite(data, size, 1, self->file) == 0)
+    return result_err(error_self()); // TODO think
+  return result_ok();
 }
 
-void file_manager_destroy(struct file_manager *file_manager) {
-  fclose(file_manager->file);
-  free(file_manager);
+void file_manager_destroy(struct file_manager *self) {
+  fclose(self->file);
+  free(self);
 }

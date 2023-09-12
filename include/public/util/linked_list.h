@@ -6,8 +6,11 @@
 #define LLP_LAB_INCLUDE_PUBLIC_UTIL_LINKED_LIST_H
 
 struct linked_list;
+struct list_iterator;
 
 void linked_list_destroy(struct linked_list *linked_list);
 void linked_list_push_back(struct linked_list *linked_list, void *data);
+
+struct list_iterator *list_iterator(struct linked_list *linked_list);
 
 #endif // LLP_LAB_INCLUDE_PUBLIC_UTIL_LINKED_LIST_H

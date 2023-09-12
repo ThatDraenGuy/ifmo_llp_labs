@@ -57,6 +57,12 @@ static void get_page_from_cache(struct cached_page_manager *cached_page_manager,
   result->data = get_cache_entry(cached_page_manager, cache_index)->contents;
 }
 
+static void *get_application_header(void *this) {
+  struct cached_page_manager *cached_page_manager = this;
+  return page_resolver_get_application_header(
+      cached_page_manager->page_resolver);
+}
+
 static size_t get_page_size(void *this) {
   struct cached_page_manager *cached_page_manager = this;
   return page_resolver_get_page_size(
@@ -71,7 +77,7 @@ static result_t get_page(void *this, page_id_t page_id, page_t *result) {
     struct cache_entry *entry = get_cache_entry(cached_page_manager, index);
     if (entry->relevancy_value != 0 && entry->page_id.bytes == page_id.bytes) {
       get_page_from_cache(cached_page_manager, index, result);
-      return RESULT_OK;
+      return result_ok();
     }
   }
   return load_page(cached_page_manager, page_id, result);
@@ -89,18 +95,18 @@ struct cached_page_manager *cached_page_manager_new() {
   return malloc(sizeof(struct cached_page_manager));
 }
 
-result_t
-cached_page_manager_ctor(struct cached_page_manager *cached_page_manager,
-                         struct i_page_resolver *page_resolver,
+result_t cached_page_manager_ctor(struct cached_page_manager *self,
+                                  struct i_page_resolver *page_resolver,
                          size_t cache_size) {
-  cached_page_manager->page_resolver = page_resolver;
-  cached_page_manager->cache_size = (cache_entry_index_t){.bytes = cache_size};
+  self->page_resolver = page_resolver;
+  self->cache_size = (cache_entry_index_t){.bytes = cache_size};
 
-  cached_page_manager->parent.get_page_size_impl = get_page_size;
-  cached_page_manager->parent.get_page_impl = get_page;
-  cached_page_manager->parent.destroy_impl = destroy;
+  self->parent.get_application_header_impl = get_application_header;
+  self->parent.get_page_size_impl = get_page_size;
+  self->parent.get_page_impl = get_page;
+  self->parent.destroy_impl = destroy;
 
-  cache_new(cached_page_manager);
+  cache_new(self);
 
-  return RESULT_OK;
+  return result_ok();
 }

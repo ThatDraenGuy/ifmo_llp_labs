@@ -1,23 +1,18 @@
 #include <stdio.h>
 
-#include "public/file/cached_page_manager.h"
-#include "public/file/file_page_resolver.h"
+#include "public/storage/database_manager.h"
 
 int main() {
-  struct file_page_resolver *file_page_resolver = file_page_resolver_new();
-  if (file_page_resolver_ctor(file_page_resolver, "test_file") == RESULT_ERR) {
-    printf("resolver err");
+  result_t res;
+
+  struct database_manager *database_manager = database_manager_new();
+
+  res = database_manager_ctor(database_manager, "test_file");
+  if (result_is_err(res)) {
+    printf("err");
+    error_destroy(res.error);
     return 0;
   }
 
-  struct cached_page_manager *cached_page_manager = cached_page_manager_new();
-  if (cached_page_manager_ctor(cached_page_manager,
-                               (struct i_page_resolver *)file_page_resolver,
-                               10) == RESULT_ERR) {
-    printf("manager err");
-    return 0;
-  }
-
-  page_manager_destroy((struct i_page_manager *)cached_page_manager);
   return 0;
 }

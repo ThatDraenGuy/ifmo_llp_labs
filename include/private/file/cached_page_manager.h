@@ -8,7 +8,6 @@
 #include "private/file/page_manager.h"
 #include "public/file/cached_page_manager.h"
 #include "public/file/page_resolver.h"
-#include "public/util/hashmap_impl.h"
 #include <stdint.h>
 
 typedef struct {
@@ -27,7 +26,6 @@ struct cached_page_manager {
   struct i_page_resolver *page_resolver;
   cache_entry_index_t cache_size;
   struct cache_entry *cache;
-  //  struct size_size_hashmap *cached_pages;
 };
 
 #endif // LLP_LAB_INCLUDE_PRIVATE_FILE_CACHED_PAGE_MANAGER_H

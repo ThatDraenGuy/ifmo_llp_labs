@@ -3,27 +3,37 @@
 //
 
 #include "private/file/page_resolver.h"
+#include "public/error/errors_common.h"
 
-size_t page_resolver_get_page_size(struct i_page_resolver *page_resolver) {
-  if (page_resolver == NULL)
+const char *const error_source = "PAGE_RESOLVER";
+
+size_t page_resolver_get_page_size(struct i_page_resolver *self) {
+  if (self == NULL)
     return 0;
-  return page_resolver->get_page_size_impl(page_resolver);
-}
-result_t page_resolver_read_page(struct i_page_resolver *page_resolver,
-                                 page_id_t page_id, page_t destination) {
-  if (page_resolver == NULL)
-    return RESULT_ERR;
-  return page_resolver->read_page_impl(page_resolver, page_id, destination);
+  return self->get_page_size_impl(self);
 }
 
-result_t page_resolver_write_page(struct i_page_resolver *page_resolver,
-                                  page_id_t page_id, page_t data) {
-  if (page_resolver == NULL)
-    return RESULT_ERR;
-  return page_resolver->write_page_impl(page_resolver, page_id, data);
+void *page_resolver_get_application_header(struct i_page_resolver *self) {
+  if (self == NULL)
+    return NULL;
+  return self->get_application_header_impl(self);
 }
-void page_resolver_destroy(struct i_page_resolver *page_resolver) {
-  if (page_resolver == NULL)
+
+result_t page_resolver_read_page(struct i_page_resolver *self,
+                                 page_id_t page_id, page_t destination) {
+  if (self == NULL)
+    return result_err(error_common(error_source, ERR_COMMON_NULL_POINTER));
+  return self->read_page_impl(self, page_id, destination);
+}
+
+result_t page_resolver_write_page(struct i_page_resolver *self,
+                                  page_id_t page_id, page_t data) {
+  if (self == NULL)
+    return result_err(error_common(error_source, ERR_COMMON_NULL_POINTER));
+  return self->write_page_impl(self, page_id, data);
+}
+void page_resolver_destroy(struct i_page_resolver *self) {
+  if (self == NULL)
     return;
-  page_resolver->destroy_impl(page_resolver);
+  self->destroy_impl(self);
 }
