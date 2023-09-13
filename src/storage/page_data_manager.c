@@ -102,12 +102,16 @@ static result_t vacuum_page(struct page_data_header *page) {
   page_index_t gap_id_index = (page_index_t){0};
   page_index_t gap_data_index = (page_index_t){0};
   bool vacuum_needed = false;
+  uint16_t actual_item_amount = page->item_amount;
 
   for (uint16_t index = 0; index < page->item_amount; index++) {
     page_index_t item_id_offset =
         (page_index_t){index * sizeof(struct page_item_id_data)};
     page_item_id_t item_id =
         (page_item_id_t)(page->contents + item_id_offset.bytes);
+
+    if (item_id->is_deleted)
+      actual_item_amount--;
 
     if (item_id->is_deleted && !vacuum_needed) {
       // vacuum start condition
@@ -139,6 +143,8 @@ static result_t vacuum_page(struct page_data_header *page) {
       gap_data_index.bytes -= item_id->item_size.bytes;
     }
   }
+
+  page->item_amount = actual_item_amount;
 
   return result_ok();
 }
