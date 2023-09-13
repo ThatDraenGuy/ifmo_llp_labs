@@ -26,8 +26,14 @@ page_group_manager_get_group(struct page_group_manager *self,
 result_t page_group_manager_add_page(struct page_group_manager *self,
                                      struct page_iterator *it, page_t *result);
 
+result_t page_group_manager_create_group(struct page_group_manager *self,
+                                         page_group_id_t *result);
+
 struct page_iterator *
 page_group_manager_get_meta_group(struct page_group_manager *self);
+
+result_t page_group_manager_flush(struct page_group_manager *self);
+void page_group_manager_destroy(struct page_group_manager *self);
 
 bool page_iterator_has_next(struct page_iterator *self);
 result_t page_iterator_next(struct page_iterator *self, page_t *result);

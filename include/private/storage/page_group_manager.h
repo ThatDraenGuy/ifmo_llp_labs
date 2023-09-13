@@ -11,9 +11,9 @@
 #include <stdint.h>
 
 struct application_header {
-  uint64_t meta_page;
-  uint64_t first_free_page;
-  uint64_t last_free_page;
+  page_id_t meta_page;
+  page_id_t first_free_page;
+  page_id_t last_free_page;
 };
 
 struct page_header {
@@ -24,6 +24,7 @@ struct page_header {
 
 struct page_iterator {
   struct i_page_manager *page_manager;
+  page_id_t next_page_id;
   page_t current_page;
 };
 

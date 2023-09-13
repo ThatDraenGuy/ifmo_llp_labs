@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 typedef struct {
-  size_t bytes;
+  uint32_t bytes;
 } page_index_t;
 
 typedef struct {

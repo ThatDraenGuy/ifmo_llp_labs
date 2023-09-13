@@ -7,7 +7,7 @@
 #include "public/error/errors_common.h"
 #include "public/util/result.h"
 
-const char *const error_source = "PAGE_MANAGER";
+static const char *const error_source = "PAGE_MANAGER";
 
 void *page_manager_get_application_header(struct i_page_manager *self) {
   if (self == NULL)
@@ -33,6 +33,13 @@ size_t page_manager_get_page_size(struct i_page_manager *self) {
   if (self == NULL)
     return 0;
   return self->get_page_size_impl(self);
+}
+
+result_t page_manager_flush(struct i_page_manager *self) {
+  if (self == NULL)
+    return result_err(error_common(error_source, ERR_COMMON_NULL_POINTER));
+
+  return self->flush_impl(self);
 }
 
 void page_manager_destroy(struct i_page_manager *self) {

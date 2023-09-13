@@ -24,7 +24,7 @@ static inline result_t result_err(struct error *error) {
 }
 
 static inline bool result_is_err(result_t result) {
-  return result.type == RESULT_OK;
+  return result.type == RESULT_ERR;
 }
 
 #endif // LLP_LAB_INCLUDE_PUBLIC_UTIL_RESULT_H

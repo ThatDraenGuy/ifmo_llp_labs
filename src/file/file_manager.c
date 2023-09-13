@@ -10,8 +10,8 @@
 #include <string.h>
 #include <unistd.h>
 
-const char *const error_source = "FILE_MANAGER";
-const char *const error_type = "FILE_MANAGER_ERROR";
+static const char *const error_source = "FILE_MANAGER";
+static const char *const error_type = "FILE_MANAGER_ERROR";
 
 static struct error *error_self() {
   return error_new(error_source, error_type, (error_code_t){errno},

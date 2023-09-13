@@ -11,4 +11,7 @@ typedef struct {
   size_t bytes;
 } page_group_id_t;
 
+#define PAGE_GROUP_ID_NULL                                                     \
+  (page_group_id_t) { .bytes = 0 }
+
 #endif // LLP_LAB_INCLUDE_PUBLIC_STORAGE_PAGE_GROUP_H

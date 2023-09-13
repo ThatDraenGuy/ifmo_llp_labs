@@ -13,6 +13,7 @@ struct i_page_manager {
                                page_id_t *result_id);
   size_t (*get_page_size_impl)(void *self);
   result_t (*get_page_impl)(void *self, page_id_t page_id, page_t *result);
+  result_t (*flush_impl)(void *self);
   void (*destroy_impl)(void *self);
 };
 

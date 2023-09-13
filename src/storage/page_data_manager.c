@@ -8,9 +8,12 @@
 #include <malloc.h>
 #include <memory.h>
 
-const char *const error_source = "PAGE_DATA_MANAGER";
+static const char *const error_source = "PAGE_DATA_MANAGER";
 
 bool item_iterator_has_next(struct item_iterator *self) {
+  if (page_is_null(self->current_page))
+    return page_iterator_has_next(self->page_iterator);
+
   struct page_header *page_header = self->current_page.data;
   if (page_header->free_space_start.bytes >
       self->current_item_id_index.bytes + sizeof(page_item_id_data_t))
@@ -27,16 +30,28 @@ result_t item_iterator_next(struct item_iterator *self, item_t *result) {
   if (!item_iterator_has_next(self))
     return result_err(error_common(error_source, ERR_COMMON_ITER_OUT_OF_RANGE));
 
-  if (page->free_space_start.bytes >
-      self->current_item_id_index.bytes + sizeof(page_item_id_data_t)) {
-    self->current_item_id_index.bytes += sizeof(page_item_id_data_t);
-  } else {
+  if (page_is_null(self->current_page) ||
+      page->free_space_start.bytes <=
+          self->current_item_id_index.bytes + sizeof(page_item_id_data_t)) {
     res = page_iterator_next(self->page_iterator, &self->current_page);
     if (result_is_err(res))
       return res;
 
     self->current_item_id_index.bytes = 0;
+  } else {
+    self->current_item_id_index.bytes += sizeof(page_item_id_data_t);
   }
+
+  //  if (page->free_space_start.bytes >
+  //      self->current_item_id_index.bytes + sizeof(page_item_id_data_t)) {
+  //    self->current_item_id_index.bytes += sizeof(page_item_id_data_t);
+  //  } else {
+  //    res = page_iterator_next(self->page_iterator, &self->current_page);
+  //    if (result_is_err(res))
+  //      return res;
+  //
+  //    self->current_item_id_index.bytes = 0;
+  //  }
   page_item_id_t page_item_id =
       (page_item_id_t)(page->contents + self->current_item_id_index.bytes);
   self->current_item = (item_t){.size = page_item_id->item_size,
@@ -78,6 +93,57 @@ static result_t insert_item(struct page_header *page, item_t item) {
   return result_ok();
 }
 
+static void initialize_page(struct page_data_manager *self,
+                            struct page_header *page_header) {
+  page_header->free_space_start = (page_index_t){.bytes = 0};
+  page_header->free_space_end = (page_index_t){
+      .bytes = page_group_manager_get_page_size(self->page_group_manager)};
+}
+
+struct page_data_manager *page_data_manager_new() {
+  return malloc(sizeof(struct page_data_manager));
+}
+
+result_t page_data_manager_ctor(struct page_data_manager *self,
+                                char *file_name) {
+  result_t res;
+
+  self->page_group_manager = page_group_manager_new();
+
+  res = page_group_manager_ctor(self->page_group_manager, file_name);
+  if (result_is_err(res)) {
+    free(self);
+    return res;
+  }
+
+  return result_ok();
+}
+
+result_t page_data_manager_create_group(struct page_data_manager *self,
+                                        page_group_id_t *result) {
+  result_t res;
+
+  res = page_group_manager_create_group(self->page_group_manager, result);
+  if (result_is_err(res))
+    return res;
+
+  struct page_iterator *page_it =
+      page_group_manager_get_group(self->page_group_manager, *result);
+
+  if (page_iterator_has_next(page_it)) {
+    page_t page = PAGE_NULL;
+    res = page_iterator_next(page_it, &page);
+    if (result_is_err(res)) {
+      page_iterator_destroy(page_it);
+      return res;
+    }
+    struct page_header *page_header = page.data;
+    initialize_page(self, page_header);
+  }
+  page_iterator_destroy(page_it);
+  return result_ok();
+}
+
 result_t page_data_manager_insert(struct page_data_manager *self,
                                   page_group_id_t page_group_id, item_t item) {
   result_t res;
@@ -105,15 +171,21 @@ result_t page_data_manager_insert(struct page_data_manager *self,
   res = page_group_manager_add_page(self->page_group_manager, page_it, &page);
   if (result_is_err(res))
     return res;
-
   struct page_header *page_header = page.data;
 
   page_iterator_destroy(page_it);
 
-  page_header->free_space_start = (page_index_t){.bytes = 0}; // TODO think
-  page_header->free_space_end = (page_index_t){
-      .bytes = page_group_manager_get_page_size(self->page_group_manager)};
+  initialize_page(self, page_header);
   return insert_item(page_header, item);
+}
+
+result_t page_data_manager_flush(struct page_data_manager *self) {
+  return page_group_manager_flush(self->page_group_manager);
+}
+
+void page_data_manager_destroy(struct page_data_manager *self) {
+  page_group_manager_destroy(self->page_group_manager);
+  free(self);
 }
 
 void item_iterator_delete_item(struct item_iterator *self) {

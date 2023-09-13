@@ -13,7 +13,7 @@
 
 /// page id type. Uniquely identifies a page
 typedef struct {
-  size_t bytes;
+  uint64_t bytes;
 } page_id_t;
 
 #define PAGE_ID_NULL                                                           \
