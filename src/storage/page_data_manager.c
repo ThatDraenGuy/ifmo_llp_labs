@@ -14,9 +14,8 @@ bool item_iterator_has_next(struct item_iterator *self) {
   if (page_is_null(self->current_page))
     return page_iterator_has_next(self->page_iterator);
 
-  struct page_header *page_header = self->current_page.data;
-  if (page_header->free_space_start.bytes >
-      self->current_item_id_index.bytes + sizeof(page_item_id_data_t))
+  struct page_data_header *page_header = self->current_page.data;
+  if (self->current_item_index + 1 < page_header->item_amount)
     return true;
 
   return page_iterator_has_next(self->page_iterator);
@@ -25,37 +24,29 @@ bool item_iterator_has_next(struct item_iterator *self) {
 result_t item_iterator_next(struct item_iterator *self, item_t *result) {
   result_t res;
 
-  struct page_header *page = self->current_page.data;
+  struct page_data_header *page = self->current_page.data;
 
   if (!item_iterator_has_next(self))
     return result_err(error_common(error_source, ERR_COMMON_ITER_OUT_OF_RANGE));
 
   if (page_is_null(self->current_page) ||
-      page->free_space_start.bytes <=
-          self->current_item_id_index.bytes + sizeof(page_item_id_data_t)) {
+      self->current_item_index + 1 >= page->item_amount) {
     res = page_iterator_next(self->page_iterator, &self->current_page);
     if (result_is_err(res))
       return res;
 
-    self->current_item_id_index.bytes = 0;
+    self->current_item_index = 0;
+    page = self->current_page.data;
   } else {
-    self->current_item_id_index.bytes += sizeof(page_item_id_data_t);
+    self->current_item_index++;
   }
 
-  //  if (page->free_space_start.bytes >
-  //      self->current_item_id_index.bytes + sizeof(page_item_id_data_t)) {
-  //    self->current_item_id_index.bytes += sizeof(page_item_id_data_t);
-  //  } else {
-  //    res = page_iterator_next(self->page_iterator, &self->current_page);
-  //    if (result_is_err(res))
-  //      return res;
-  //
-  //    self->current_item_id_index.bytes = 0;
-  //  }
   page_item_id_t page_item_id =
-      (page_item_id_t)(page->contents + self->current_item_id_index.bytes);
-  self->current_item = (item_t){.size = page_item_id->item_size,
-                                page->contents + page_item_id->item_offset};
+      (page_item_id_t)(page->contents + self->current_item_index *
+                                            sizeof(struct page_item_id_data));
+  self->current_item =
+      (item_t){.size = page_item_id->item_size.bytes,
+               page->contents + page_item_id->item_offset.bytes};
 
   *result = self->current_item;
   return result_ok();
@@ -72,11 +63,14 @@ item_iterator_new(struct page_data_manager *page_data_manager,
   struct item_iterator *it = malloc(sizeof(struct item_iterator));
   it->page_iterator = page_group_manager_get_group(
       page_data_manager->page_group_manager, page_group_id);
+  it->current_page = PAGE_NULL;
+  it->current_item = ITEM_NULL;
+  it->current_item_index = 0;
 
   return it;
 }
 
-static result_t insert_item(struct page_header *page, item_t item) {
+static result_t insert_item(struct page_data_header *page, item_t item) {
   size_t item_offset = page->free_space_end.bytes - item.size;
 
   page_item_id_t item_id =
@@ -85,19 +79,94 @@ static result_t insert_item(struct page_header *page, item_t item) {
 
   page->free_space_start.bytes += sizeof(page_item_id_data_t);
   page->free_space_end.bytes = item_offset;
+  page->item_amount++;
 
-  item_id->item_size = item.size;
-  item_id->item_offset = item_offset;
+  item_id->item_size.bytes = item.size;
+  item_id->item_offset.bytes = item_offset;
+  item_id->is_deleted = false;
 
   memcpy(new_item_data, item.data, item.size);
   return result_ok();
 }
 
 static void initialize_page(struct page_data_manager *self,
-                            struct page_header *page_header) {
+                            struct page_data_header *page_header) {
   page_header->free_space_start = (page_index_t){.bytes = 0};
   page_header->free_space_end = (page_index_t){
-      .bytes = page_group_manager_get_page_size(self->page_group_manager)};
+      .bytes = page_group_manager_get_page_capacity(self->page_group_manager) -
+               sizeof(struct page_data_header)};
+  page_header->item_amount = 0;
+}
+
+static result_t vacuum_page(struct page_data_header *page) {
+  page_index_t gap_id_index = (page_index_t){0};
+  page_index_t gap_data_index = (page_index_t){0};
+  bool vacuum_needed = false;
+
+  for (uint16_t index = 0; index < page->item_amount; index++) {
+    page_index_t item_id_offset =
+        (page_index_t){index * sizeof(struct page_item_id_data)};
+    page_item_id_t item_id =
+        (page_item_id_t)(page->contents + item_id_offset.bytes);
+
+    if (item_id->is_deleted && !vacuum_needed) {
+      // vacuum start condition
+      vacuum_needed = true;
+      gap_id_index = item_id_offset;
+      gap_data_index.bytes =
+          item_id->item_offset.bytes + item_id->item_size.bytes;
+
+    } else if (!item_id->is_deleted && vacuum_needed) {
+      // perform vacuum
+
+      page_index_t old_item_offset = item_id->item_offset;
+      page_index_t new_item_offset =
+          (page_index_t){gap_data_index.bytes - item_id->item_size.bytes};
+      // move actual item to fill the gap
+      memmove(page->contents + new_item_offset.bytes,
+              page->contents + old_item_offset.bytes, item_id->item_size.bytes);
+
+      // adjust item offset
+      item_id->item_offset = new_item_offset;
+
+      // move item id to fill the gap
+      memcpy(page->contents + gap_id_index.bytes,
+             page->contents + item_id_offset.bytes,
+             sizeof(struct page_item_id_data));
+
+      // adjust new gap parameters
+      gap_id_index = item_id_offset;
+      gap_data_index.bytes -= item_id->item_size.bytes;
+    }
+  }
+
+  return result_ok();
+}
+
+static result_t vacuum_deleted_items(struct page_data_manager *self,
+                                     page_group_id_t page_group_id) {
+  result_t res;
+  struct page_iterator *page_it =
+      page_group_manager_get_group(self->page_group_manager, page_group_id);
+
+  while (page_iterator_has_next(page_it)) {
+    page_t page = PAGE_NULL;
+    res = page_iterator_next(page_it, &page);
+    if (result_is_err(res)) {
+      page_iterator_destroy(page_it);
+      return res;
+    }
+
+    struct page_data_header *page_data_header = page.data;
+    res = vacuum_page(page_data_header);
+    if (result_is_err(res)) {
+      page_iterator_destroy(page_it);
+      return res;
+    }
+  }
+
+  page_iterator_destroy(page_it);
+  return result_ok();
 }
 
 struct page_data_manager *page_data_manager_new() {
@@ -137,7 +206,7 @@ result_t page_data_manager_create_group(struct page_data_manager *self,
       page_iterator_destroy(page_it);
       return res;
     }
-    struct page_header *page_header = page.data;
+    struct page_data_header *page_header = page.data;
     initialize_page(self, page_header);
   }
   page_iterator_destroy(page_it);
@@ -157,7 +226,7 @@ result_t page_data_manager_insert(struct page_data_manager *self,
     if (result_is_err(res))
       return res;
 
-    struct page_header *page_header = page.data;
+    struct page_data_header *page_header = page.data;
 
     if (page_item_entry_size(item.size) <
         page_header->free_space_end.bytes -
@@ -171,7 +240,7 @@ result_t page_data_manager_insert(struct page_data_manager *self,
   res = page_group_manager_add_page(self->page_group_manager, page_it, &page);
   if (result_is_err(res))
     return res;
-  struct page_header *page_header = page.data;
+  struct page_data_header *page_header = page.data;
 
   page_iterator_destroy(page_it);
 
@@ -179,7 +248,13 @@ result_t page_data_manager_insert(struct page_data_manager *self,
   return insert_item(page_header, item);
 }
 
-result_t page_data_manager_flush(struct page_data_manager *self) {
+result_t page_data_manager_flush(struct page_data_manager *self,
+                                 page_group_id_t page_group_id) {
+  result_t res;
+
+  res = vacuum_deleted_items(self, page_group_id);
+  if (result_is_err(res))
+    return res;
   return page_group_manager_flush(self->page_group_manager);
 }
 
@@ -189,10 +264,11 @@ void page_data_manager_destroy(struct page_data_manager *self) {
 }
 
 void item_iterator_delete_item(struct item_iterator *self) {
-  struct page_header *page = self->current_page.data;
+  struct page_data_header *page = self->current_page.data;
 
   page_item_id_t page_item_id =
-      (page_item_id_t)(page->contents + self->current_item_id_index.bytes);
+      (page_item_id_t)(page->contents + self->current_item_index *
+                                            sizeof(struct page_item_id_data));
   page_item_id->is_deleted = true;
 }
 

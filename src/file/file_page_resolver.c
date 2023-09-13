@@ -26,7 +26,8 @@ static size_t get_page_size(void *self) {
 
 static result_t get_new_page_id(void *self, page_id_t *result) {
   struct file_page_resolver *file_page_resolver = self;
-  *result = (page_id_t){file_page_resolver->file_header.page_amount + 1};
+  *result = (page_id_t){++file_page_resolver->file_header.page_amount};
+  file_page_resolver->was_file_header_altered = true;
   return result_ok();
 }
 
@@ -45,8 +46,21 @@ static result_t read_page(void *self, page_id_t page_id, page_t destination) {
                            destination.data);
 }
 
+static result_t write_header(struct file_page_resolver *self) {
+  self->was_file_header_altered = false;
+  return file_manager_write(self->file_manager, sizeof(struct file_header), 0,
+                            &self->file_header);
+}
+
 static result_t write_page(void *self, page_id_t page_id, page_t data) {
+  result_t res;
+
   struct file_page_resolver *file_page_resolver = self;
+  if (file_page_resolver->was_file_header_altered) {
+    res = write_header(self);
+    if (result_is_err(res))
+      return res;
+  }
   size_t page_size =
       page_resolver_get_page_size((struct i_page_resolver *)self);
   uint32_t offset = resolve_page_offset(file_page_resolver, page_size, page_id);
@@ -63,9 +77,11 @@ static void destroy(void *self) {
 }
 
 static result_t initialize_file_header(struct file_manager *file_manager,
-                                       struct file_header *file_header) {
+                                       struct file_header *file_header,
+                                       size_t application_header_size) {
   file_header->format_type = FORMAT_TYPE;
-  file_header->offset_to_data = sizeof(struct file_header);
+  file_header->offset_to_data =
+      sizeof(struct file_header) + application_header_size;
   file_header->page_size = DEFAULT_PAGE_SIZE;
   file_header->page_amount = 0;
   return file_manager_write(file_manager, sizeof(struct file_header), 0,
@@ -77,7 +93,8 @@ struct file_page_resolver *file_page_resolver_new() {
 }
 
 result_t file_page_resolver_ctor(struct file_page_resolver *self,
-                                 char *file_name, size_t header_size,
+                                 char *file_name,
+                                 size_t application_header_size,
                                  void *default_header) {
   result_t res;
 
@@ -89,24 +106,26 @@ result_t file_page_resolver_ctor(struct file_page_resolver *self,
   }
 
   self->file_manager = file_manager;
-  self->application_header_size = header_size;
-  self->application_header = malloc(header_size);
+  self->application_header_size = application_header_size;
+  self->application_header = malloc(application_header_size);
 
   struct file_header *file_header = &(self->file_header);
   void *application_header = self->application_header;
 
   if (file_manager_is_file_new(file_manager)) {
     // file is new - initialize headers
-    res = initialize_file_header(file_manager, file_header);
+    self->was_file_header_altered = true;
+    res = initialize_file_header(file_manager, file_header,
+                                 application_header_size);
     if (result_is_err(res)) {
       free(application_header);
       file_manager_destroy(file_manager);
       free(self);
       return res;
     }
-    memcpy(application_header, default_header, header_size);
+    memcpy(application_header, default_header, application_header_size);
 
-    res = file_manager_write(file_manager, header_size,
+    res = file_manager_write(file_manager, application_header_size,
                              sizeof(struct file_header), application_header);
     if (result_is_err(res)) {
       free(application_header);
@@ -116,6 +135,7 @@ result_t file_page_resolver_ctor(struct file_page_resolver *self,
     }
   } else {
     // file is not new - read headers
+    self->was_file_header_altered = false;
     res = file_manager_read(file_manager, sizeof(struct file_header), 0,
                             file_header);
     if (result_is_err(res)) {
@@ -134,7 +154,7 @@ result_t file_page_resolver_ctor(struct file_page_resolver *self,
                                   error_messages[INVALID_HEADER]));
     }
 
-    res = file_manager_read(file_manager, header_size,
+    res = file_manager_read(file_manager, application_header_size,
                             sizeof(struct file_header), application_header);
     if (result_is_err(res)) {
       free(application_header);

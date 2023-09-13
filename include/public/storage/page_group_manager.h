@@ -17,7 +17,7 @@ struct page_group_manager *page_group_manager_new();
 result_t page_group_manager_ctor(struct page_group_manager *self,
                                  char *file_name);
 
-size_t page_group_manager_get_page_size(struct page_group_manager *self);
+size_t page_group_manager_get_page_capacity(struct page_group_manager *self);
 
 struct page_iterator *
 page_group_manager_get_group(struct page_group_manager *self,

@@ -32,40 +32,60 @@ int main() {
   printf("group id: %zu\n", page_group_id.bytes);
 
   uint16_t *item_data = malloc(sizeof(uint16_t));
-  *item_data = 0xCD;
+  *item_data = 0xABCD;
   item_t item = (item_t){.size = sizeof(uint16_t), .data = item_data};
   res = page_data_manager_insert(page_data_manager, page_group_id, item);
+  if (result_is_err(res)) {
+    free(item_data);
+    page_data_manager_destroy(page_data_manager);
+    handle_error(res.error);
+    return 0;
+  }
   free(item_data);
+
+  uint32_t *item_data2 = malloc(sizeof(uint32_t));
+  *item_data2 = 0x12345678;
+  item_t item2 = (item_t){.size = sizeof(uint32_t), .data = item_data2};
+  res = page_data_manager_insert(page_data_manager, page_group_id, item2);
+  if (result_is_err(res)) {
+    free(item_data2);
+    page_data_manager_destroy(page_data_manager);
+    handle_error(res.error);
+    return 0;
+  }
+  free(item_data2);
+
+  struct item_iterator *it =
+      page_data_manager_get_items(page_data_manager, page_group_id);
+
+  size_t counter = 0;
+  while (item_iterator_has_next(it)) {
+    counter++;
+    item_t smh;
+    res = item_iterator_next(it, &smh);
+    if (result_is_err(res)) {
+      item_iterator_destroy(it);
+      page_data_manager_destroy(page_data_manager);
+      handle_error(res.error);
+      return 0;
+    }
+
+    uint16_t smh_data = *(uint16_t *)smh.data;
+    printf("%hu\n", smh_data);
+
+    if (counter < 2) {
+      item_iterator_delete_item(it);
+    }
+  }
+  item_iterator_destroy(it);
+
+  res = page_data_manager_flush(page_data_manager, page_group_id);
   if (result_is_err(res)) {
     page_data_manager_destroy(page_data_manager);
     handle_error(res.error);
     return 0;
   }
 
-  res = page_data_manager_flush(page_data_manager);
-  if (result_is_err(res)) {
-    page_data_manager_destroy(page_data_manager);
-    handle_error(res.error);
-    return 0;
-  }
-
-  //  struct item_iterator *item_it =
-  //      page_data_manager_get_items(page_data_manager, page_group_id);
-  //
-  //  while (item_iterator_has_next(item_it)) {
-  //    printf("item");
-  //    item_t item = ITEM_NULL;
-  //    res = item_iterator_next(item_it, &item);
-  //    if (result_is_err(res)) {
-  //      item_iterator_destroy(item_it);
-  //      page_data_manager_destroy(page_data_manager);
-  //      handle_error(res.error);
-  //      return 0;
-  //    }
-  //  }
-  //  printf("no more items");
-  //
-  //  item_iterator_destroy(item_it);
   page_data_manager_destroy(page_data_manager);
   printf("done");
   return 0;

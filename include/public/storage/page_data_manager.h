@@ -30,7 +30,8 @@ struct item_iterator *
 page_data_manager_get_items(struct page_data_manager *self,
                             page_group_id_t page_group_id);
 
-result_t page_data_manager_flush(struct page_data_manager *self);
+result_t page_data_manager_flush(struct page_data_manager *self,
+                                 page_group_id_t page_group_id);
 void page_data_manager_destroy(struct page_data_manager *self);
 
 bool item_iterator_has_next(struct item_iterator *self);

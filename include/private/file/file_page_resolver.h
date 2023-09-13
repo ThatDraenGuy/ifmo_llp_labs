@@ -23,6 +23,7 @@ struct file_page_resolver {
   struct i_page_resolver parent;
   struct file_manager *file_manager;
   struct file_header file_header;
+  bool was_file_header_altered;
   size_t application_header_size;
   void *application_header;
 };

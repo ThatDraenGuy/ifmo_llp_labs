@@ -14,8 +14,8 @@ static const char *const iterator_error_source = "PAGE_ITERATOR";
 bool page_iterator_has_next(struct page_iterator *self) {
   return !page_id_is_null(self->next_page_id);
 
-  //  struct page_header *page_header = self->current_page.data;
-  //  return page_id_is_null(page_header->next);
+  //  struct page_data_header *page_data_header = self->current_page.data;
+  //  return page_id_is_null(page_data_header->next);
 }
 
 result_t page_iterator_next(struct page_iterator *self, page_t *result) {
@@ -25,11 +25,15 @@ result_t page_iterator_next(struct page_iterator *self, page_t *result) {
     return result_err(
         error_common(iterator_error_source, ERR_COMMON_ITER_OUT_OF_RANGE));
 
-  res = page_manager_get_page(self->page_manager, self->next_page_id, result);
+  res = page_manager_get_page(self->page_manager, self->next_page_id,
+                              &self->current_page);
   if (result_is_err(res)) {
     return res;
   }
-  self->current_page = *result;
+
+  // skip page_header for the resulting page
+  result->data = self->current_page.data + sizeof(struct page_header);
+
   struct page_header *page_header = self->current_page.data;
   self->next_page_id = page_header->next;
   return result_ok();
@@ -74,7 +78,6 @@ static result_t create_page(struct page_group_manager *self, page_t *result,
 
   struct page_header *page_header = result->data;
   page_header->next = PAGE_ID_NULL;
-  page_header->is_free = false;
 
   return result_ok();
 }
@@ -132,6 +135,8 @@ result_t page_group_manager_add_page(struct page_group_manager *self,
   struct page_header *new_page_header = result->data;
   if (page_iterator_has_next(it)) {
     new_page_header->next = page_header->next;
+  } else {
+    new_page_header->next = PAGE_ID_NULL;
   }
   page_header->next = page_id;
 
@@ -152,7 +157,7 @@ result_t page_group_manager_create_group(struct page_group_manager *self,
   return result_ok();
 }
 
-size_t page_group_manager_get_page_size(struct page_group_manager *self) {
+size_t page_group_manager_get_page_capacity(struct page_group_manager *self) {
   return page_manager_get_page_size(self->page_manager) -
          sizeof(struct page_header);
 }

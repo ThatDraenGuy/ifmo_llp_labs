@@ -10,14 +10,13 @@
 #include "public/storage/page_group_manager.h"
 #include <stdint.h>
 
-struct application_header {
+struct __attribute__((packed)) application_header {
   page_id_t meta_page;
   page_id_t first_free_page;
   page_id_t last_free_page;
 };
 
-struct page_header {
-  bool is_free;
+struct __attribute__((packed)) page_header {
   page_id_t next;
   uint8_t contents[];
 };

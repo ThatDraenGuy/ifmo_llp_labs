@@ -13,11 +13,13 @@
 struct item_iterator {
   struct page_iterator *page_iterator;
   page_t current_page;
-  page_index_t current_item_id_index;
+  //  page_index_t current_item_id_index;
+  uint16_t current_item_index;
   item_t current_item;
 };
 
-struct page_header {
+struct __attribute__((packed)) page_data_header {
+  uint16_t item_amount;
   page_index_t free_space_start;
   page_index_t free_space_end;
   uint8_t contents[];
