@@ -77,7 +77,7 @@ static result_t insert_item(struct page_data_header *page, item_t item) {
       (page_item_id_t)(page->contents + page->free_space_start.bytes);
   void *new_item_data = page->contents + item_offset;
 
-  page->free_space_start.bytes += sizeof(page_item_id_data_t);
+  page->free_space_start.bytes += sizeof(struct page_item_id_data);
   page->free_space_end.bytes = item_offset;
   page->item_amount++;
 
