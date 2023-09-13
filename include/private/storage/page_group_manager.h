@@ -22,13 +22,13 @@ struct __attribute__((packed)) page_header {
 };
 
 struct page_iterator {
-  struct i_page_manager *page_manager;
+  struct page_manager *page_manager;
   page_id_t next_page_id;
   page_t current_page;
 };
 
 struct page_group_manager {
-  struct i_page_manager *page_manager;
+  struct page_manager *page_manager;
 };
 
 #endif // LLP_LAB_INCLUDE_PRIVATE_STORAGE_PAGE_GROUP_MANAGER_H

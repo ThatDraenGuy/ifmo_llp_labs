@@ -1,19 +1,30 @@
 //
-// Created by draen on 09.09.23.
+// Created by draen on 08.09.23.
 //
 
 #ifndef LLP_LAB_INCLUDE_PRIVATE_FILE_PAGE_RESOLVER_H
 #define LLP_LAB_INCLUDE_PRIVATE_FILE_PAGE_RESOLVER_H
 
+#include "private/file/page_resolver.h"
+#include "public/file/file_manager.h"
 #include "public/file/page_resolver.h"
+#include <stdint.h>
 
-struct i_page_resolver {
-  size_t (*get_page_size_impl)(void *self);
-  void *(*get_application_header_impl)(void *self);
-  result_t (*get_new_page_id_impl)(void *self, page_id_t *result);
-  result_t (*read_page_impl)(void *self, page_id_t page_id, page_t destination);
-  result_t (*write_page_impl)(void *self, page_id_t page_id, page_t data);
-  void (*destroy_impl)(void *self);
+#define FORMAT_TYPE 0xB0BA
+
+struct __attribute__((packed)) file_header {
+  uint16_t format_type;
+  uint32_t offset_to_data;
+  uint64_t page_size;
+  uint64_t page_amount;
+};
+
+struct page_resolver {
+  struct file_manager *file_manager;
+  struct file_header file_header;
+  bool was_file_header_altered;
+  size_t application_header_size;
+  void *application_header;
 };
 
 #endif // LLP_LAB_INCLUDE_PRIVATE_FILE_PAGE_RESOLVER_H

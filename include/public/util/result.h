@@ -15,9 +15,8 @@ typedef struct {
   struct error *error;
 } result_t;
 
-static inline result_t result_ok() {
-  return (result_t){.type = RESULT_OK, .error = NULL};
-}
+#define OK                                                                     \
+  (result_t) { .type = RESULT_OK, .error = NULL }
 
 static inline result_t result_err(struct error *error) {
   return (result_t){.type = RESULT_ERR, .error = error};

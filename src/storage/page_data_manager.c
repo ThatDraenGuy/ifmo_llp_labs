@@ -22,6 +22,7 @@ bool item_iterator_has_next(struct item_iterator *self) {
 }
 
 result_t item_iterator_next(struct item_iterator *self, item_t *result) {
+  ASSERT_NOT_NULL(self, error_source);
   result_t res;
 
   struct page_data_header *page = self->current_page.data;
@@ -49,7 +50,7 @@ result_t item_iterator_next(struct item_iterator *self, item_t *result) {
                page->contents + page_item_id->item_offset.bytes};
 
   *result = self->current_item;
-  return result_ok();
+  return OK;
 }
 
 void item_iterator_destroy(struct item_iterator *self) {
@@ -86,7 +87,7 @@ static result_t insert_item(struct page_data_header *page, item_t item) {
   item_id->is_deleted = false;
 
   memcpy(new_item_data, item.data, item.size);
-  return result_ok();
+  return OK;
 }
 
 static void initialize_page(struct page_data_manager *self,
@@ -146,7 +147,7 @@ static result_t vacuum_page(struct page_data_header *page) {
 
   page->item_amount = actual_item_amount;
 
-  return result_ok();
+  return OK;
 }
 
 static result_t vacuum_deleted_items(struct page_data_manager *self,
@@ -172,7 +173,7 @@ static result_t vacuum_deleted_items(struct page_data_manager *self,
   }
 
   page_iterator_destroy(page_it);
-  return result_ok();
+  return OK;
 }
 
 struct page_data_manager *page_data_manager_new() {
@@ -181,6 +182,7 @@ struct page_data_manager *page_data_manager_new() {
 
 result_t page_data_manager_ctor(struct page_data_manager *self,
                                 char *file_name) {
+  ASSERT_NOT_NULL(self, error_source);
   result_t res;
 
   self->page_group_manager = page_group_manager_new();
@@ -191,11 +193,12 @@ result_t page_data_manager_ctor(struct page_data_manager *self,
     return res;
   }
 
-  return result_ok();
+  return OK;
 }
 
 result_t page_data_manager_create_group(struct page_data_manager *self,
                                         page_group_id_t *result) {
+  ASSERT_NOT_NULL(self, error_source);
   result_t res;
 
   res = page_group_manager_create_group(self->page_group_manager, result);
@@ -216,11 +219,12 @@ result_t page_data_manager_create_group(struct page_data_manager *self,
     initialize_page(self, page_header);
   }
   page_iterator_destroy(page_it);
-  return result_ok();
+  return OK;
 }
 
 result_t page_data_manager_insert(struct page_data_manager *self,
                                   page_group_id_t page_group_id, item_t item) {
+  ASSERT_NOT_NULL(self, error_source);
   result_t res;
 
   struct page_iterator *page_it =
@@ -256,6 +260,7 @@ result_t page_data_manager_insert(struct page_data_manager *self,
 
 result_t page_data_manager_flush(struct page_data_manager *self,
                                  page_group_id_t page_group_id) {
+  ASSERT_NOT_NULL(self, error_source);
   result_t res;
 
   res = vacuum_deleted_items(self, page_group_id);

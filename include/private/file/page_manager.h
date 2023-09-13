@@ -1,20 +1,40 @@
 //
-// Created by draen on 07.09.23.
+// Created by draen on 08.09.23.
 //
 
 #ifndef LLP_LAB_INCLUDE_PRIVATE_FILE_PAGE_MANAGER_H
 #define LLP_LAB_INCLUDE_PRIVATE_FILE_PAGE_MANAGER_H
 
+#include "private/file/page_manager.h"
 #include "public/file/page_manager.h"
+#include "public/file/page_resolver.h"
+#include <stdint.h>
 
-struct i_page_manager {
-  void *(*get_application_header_impl)(void *self);
-  result_t (*create_page_impl)(void *self, page_t *result,
-                               page_id_t *result_id);
-  size_t (*get_page_size_impl)(void *self);
-  result_t (*get_page_impl)(void *self, page_id_t page_id, page_t *result);
-  result_t (*flush_impl)(void *self);
-  void (*destroy_impl)(void *self);
+typedef struct {
+  size_t bytes;
+} cache_entry_index_t;
+
+typedef struct {
+  uint8_t bytes;
+} relevancy_value_t;
+
+#define MOST_RELEVANT_VALUE                                                    \
+  (relevancy_value_t) { .bytes = UINT8_MAX }
+
+#define LEAST_RELEVANT_VALUE                                                   \
+  (relevancy_value_t) { .bytes = 0 }
+
+struct cache_entry {
+  relevancy_value_t relevancy_value;
+  bool is_altered;
+  page_id_t page_id;
+  uint8_t contents[];
+};
+
+struct page_manager {
+  struct page_resolver *page_resolver;
+  cache_entry_index_t cache_size;
+  uint8_t *cache;
 };
 
 #endif // LLP_LAB_INCLUDE_PRIVATE_FILE_PAGE_MANAGER_H
