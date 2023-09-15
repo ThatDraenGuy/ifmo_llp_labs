@@ -5,7 +5,7 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_FILE_PAGE_RESOLVER_H
 #define LLP_LAB_INCLUDE_PUBLIC_FILE_PAGE_RESOLVER_H
 
-#include "page.h"
+#include "domain/page.h"
 #include "public/util/result.h"
 
 struct page_resolver;

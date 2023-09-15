@@ -20,17 +20,14 @@ bool page_iterator_has_next(struct page_iterator *self) {
 
 result_t page_iterator_next(struct page_iterator *self, page_t *result) {
   ASSERT_NOT_NULL(self, error_source);
-  result_t res;
 
   if (!page_iterator_has_next(self))
     return result_err(
         error_common(iterator_error_source, ERR_COMMON_ITER_OUT_OF_RANGE));
 
-  res = page_manager_get_page(self->page_manager, self->next_page_id,
-                              &self->current_page);
-  if (result_is_err(res)) {
-    return res;
-  }
+  TRY(page_manager_get_page(self->page_manager, self->next_page_id,
+                            &self->current_page));
+  CATCH(error, PROPAGATE)
 
   // skip page_header for the resulting page
   result->data = self->current_page.data + sizeof(struct page_header);
@@ -71,11 +68,8 @@ static result_t get_new_page(struct page_group_manager *self, page_t *result,
 
 static result_t create_page(struct page_group_manager *self, page_t *result,
                             page_id_t *result_id) {
-  result_t res;
-
-  res = get_new_page(self, result, result_id);
-  if (result_is_err(res))
-    return res;
+  TRY(get_new_page(self, result, result_id));
+  CATCH(error, PROPAGATE)
 
   struct page_header *page_header = result->data;
   page_header->next = PAGE_ID_NULL;
@@ -90,7 +84,6 @@ struct page_group_manager *page_group_manager_new() {
 result_t page_group_manager_ctor(struct page_group_manager *self,
                                  char *file_name) {
   ASSERT_NOT_NULL(self, error_source);
-  result_t res;
 
   struct application_header *default_header =
       malloc(sizeof(struct application_header));
@@ -99,38 +92,34 @@ result_t page_group_manager_ctor(struct page_group_manager *self,
   default_header->meta_page = PAGE_ID_NULL;
 
   struct page_resolver *page_resolver = page_resolver_new();
-  res = page_resolver_ctor(page_resolver, file_name,
-                           sizeof(struct application_header), default_header);
-  if (result_is_err(res)) {
+  TRY(page_resolver_ctor(page_resolver, file_name,
+                         sizeof(struct application_header), default_header));
+  CATCH(error, {
     free(default_header);
     free(self);
-    return res;
-  }
+    PROPAGATE;
+  })
 
   free(default_header);
 
   struct page_manager *page_manager = page_manager_new();
-  res = page_manager_ctor(page_manager, page_resolver, 10);
-  if (result_is_err(res)) {
+  TRY(page_manager_ctor(page_manager, page_resolver, 10));
+  CATCH(error, {
     free(self);
-    return res;
-  }
+    PROPAGATE;
+  })
 
   self->page_manager = page_manager;
-
   return OK;
 }
 
 result_t page_group_manager_add_page(struct page_group_manager *self,
                                      struct page_iterator *it, page_t *result) {
   ASSERT_NOT_NULL(self, error_source);
-  result_t res;
 
   page_id_t page_id = PAGE_ID_NULL;
-  res = create_page(self, result, &page_id);
-  if (result_is_err(res)) {
-    return res;
-  }
+  TRY(create_page(self, result, &page_id));
+  CATCH(error, PROPAGATE)
 
   struct page_header *page_header = it->current_page.data;
   struct page_header *new_page_header = result->data;
@@ -147,13 +136,11 @@ result_t page_group_manager_add_page(struct page_group_manager *self,
 result_t page_group_manager_create_group(struct page_group_manager *self,
                                          page_group_id_t *result) {
   ASSERT_NOT_NULL(self, error_source);
-  result_t res;
+
   page_t new_page = PAGE_NULL;
   page_id_t new_page_id = PAGE_ID_NULL;
-
-  res = create_page(self, &new_page, &new_page_id);
-  if (result_is_err(res))
-    return res;
+  TRY(create_page(self, &new_page, &new_page_id));
+  CATCH(error, PROPAGATE)
 
   *result = (page_group_id_t){new_page_id.bytes};
   return OK;

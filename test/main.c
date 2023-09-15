@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include "private/error/error.h"
-#include "public/storage/database_manager.h"
+#include "public/storage/page_data_manager.h"
 
 static void handle_error(struct error *err) {
   printf("Encountered error at %s:\n %s(%zu): %s", err->error_source,
@@ -11,48 +11,46 @@ static void handle_error(struct error *err) {
 }
 
 int main() {
-  result_t res;
-
   struct page_data_manager *page_data_manager = page_data_manager_new();
 
-  res = page_data_manager_ctor(page_data_manager, "test_file");
-  if (result_is_err(res)) {
-    handle_error(res.error);
+  TRY(page_data_manager_ctor(page_data_manager, "test_file"));
+  CATCH(error, {
+    handle_error(error);
     return 0;
-  }
+  })
 
   page_group_id_t page_group_id = PAGE_GROUP_ID_NULL;
-  res = page_data_manager_create_group(page_data_manager, &page_group_id);
-  if (result_is_err(res)) {
+  TRY(page_data_manager_create_group(page_data_manager, &page_group_id));
+  CATCH(error, {
     page_data_manager_destroy(page_data_manager);
-    handle_error(res.error);
+    handle_error(error);
     return 0;
-  }
+  })
 
   printf("group id: %zu\n", page_group_id.bytes);
 
   uint16_t *item_data = malloc(sizeof(uint16_t));
   *item_data = 0xABCD;
   item_t item = (item_t){.size = sizeof(uint16_t), .data = item_data};
-  res = page_data_manager_insert(page_data_manager, page_group_id, item);
-  if (result_is_err(res)) {
+  TRY(page_data_manager_insert(page_data_manager, page_group_id, item));
+  CATCH(error, {
     free(item_data);
     page_data_manager_destroy(page_data_manager);
-    handle_error(res.error);
+    handle_error(error);
     return 0;
-  }
+  })
   free(item_data);
 
   uint32_t *item_data2 = malloc(sizeof(uint32_t));
   *item_data2 = 0x12345678;
   item_t item2 = (item_t){.size = sizeof(uint32_t), .data = item_data2};
-  res = page_data_manager_insert(page_data_manager, page_group_id, item2);
-  if (result_is_err(res)) {
+  TRY(page_data_manager_insert(page_data_manager, page_group_id, item2));
+  CATCH(error, {
     free(item_data2);
     page_data_manager_destroy(page_data_manager);
-    handle_error(res.error);
+    handle_error(error);
     return 0;
-  }
+  })
   free(item_data2);
 
   struct item_iterator *it =
@@ -62,13 +60,13 @@ int main() {
   while (item_iterator_has_next(it)) {
     counter++;
     item_t smh;
-    res = item_iterator_next(it, &smh);
-    if (result_is_err(res)) {
+    TRY(item_iterator_next(it, &smh));
+    CATCH(error, {
       item_iterator_destroy(it);
       page_data_manager_destroy(page_data_manager);
-      handle_error(res.error);
+      handle_error(error);
       return 0;
-    }
+    })
 
     uint16_t smh_data = *(uint16_t *)smh.data;
     printf("%hu\n", smh_data);
@@ -79,12 +77,12 @@ int main() {
   }
   item_iterator_destroy(it);
 
-  res = page_data_manager_flush(page_data_manager, page_group_id);
-  if (result_is_err(res)) {
+  TRY(page_data_manager_flush(page_data_manager, page_group_id));
+  CATCH(error, {
     page_data_manager_destroy(page_data_manager);
-    handle_error(res.error);
+    handle_error(error);
     return 0;
-  }
+  })
 
   page_data_manager_destroy(page_data_manager);
   printf("done");

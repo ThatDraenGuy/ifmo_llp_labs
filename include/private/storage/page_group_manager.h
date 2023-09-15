@@ -5,7 +5,7 @@
 #ifndef LLP_LAB_INCLUDE_PRIVATE_STORAGE_PAGE_GROUP_MANAGER_H
 #define LLP_LAB_INCLUDE_PRIVATE_STORAGE_PAGE_GROUP_MANAGER_H
 
-#include "public/file/page.h"
+#include "public/file/domain/page.h"
 #include "public/file/page_manager.h"
 #include "public/storage/page_group_manager.h"
 #include <stdint.h>

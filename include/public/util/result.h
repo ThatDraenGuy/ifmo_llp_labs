@@ -18,6 +18,19 @@ typedef struct {
 #define OK                                                                     \
   (result_t) { .type = RESULT_OK, .error = NULL }
 
+#define TRY(Action)                                                            \
+  {                                                                            \
+    result_t __res = Action
+
+#define CATCH(ErrorName, OnErr)                                                \
+  if (result_is_err(__res)) {                                                  \
+    struct error *ErrorName = __res.error;                                     \
+    OnErr;                                                                     \
+  }                                                                            \
+  }
+
+#define PROPAGATE return __res
+
 static inline result_t result_err(struct error *error) {
   return (result_t){.type = RESULT_ERR, .error = error};
 }

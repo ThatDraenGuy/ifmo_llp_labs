@@ -60,12 +60,10 @@ static result_t flush_entry(struct page_manager *self,
 
 static result_t load_page_from_resolver(struct page_manager *self,
                                         page_id_t page_id, page_t *result) {
-  result_t res;
 
   struct cache_entry *entry = get_least_relevant_entry(self);
-  res = flush_entry(self, entry);
-  if (result_is_err(res))
-    return res;
+  TRY(flush_entry(self, entry));
+  CATCH(error, PROPAGATE)
 
   result->data = entry->contents;
   entry->relevancy_value = MOST_RELEVANT_VALUE;
@@ -87,18 +85,15 @@ void *page_manager_get_application_header(struct page_manager *self) {
 result_t page_manager_create_page(struct page_manager *self, page_t *result,
                                   page_id_t *result_id) {
   ASSERT_NOT_NULL(self, error_source);
-  result_t res;
 
   struct cache_entry *entry = get_least_relevant_entry(self);
-  res = flush_entry(self, entry);
-  if (result_is_err(res))
-    return res;
+  TRY(flush_entry(self, entry));
+  CATCH(error, PROPAGATE)
 
   entry->relevancy_value = MOST_RELEVANT_VALUE;
   entry->is_altered = true;
-  res = page_resolver_get_new_page_id(self->page_resolver, &entry->page_id);
-  if (result_is_err(res))
-    return res;
+  TRY(page_resolver_get_new_page_id(self->page_resolver, &entry->page_id));
+  CATCH(error, PROPAGATE)
 
   *result_id = entry->page_id;
 
@@ -129,16 +124,14 @@ size_t page_manager_get_page_size(struct page_manager *self) {
 
 result_t page_manager_flush(struct page_manager *self) {
   ASSERT_NOT_NULL(self, error_source);
-  result_t res;
 
   for (cache_entry_index_t index = (cache_entry_index_t){.bytes = 0};
        index.bytes < self->cache_size.bytes; index.bytes++) {
     struct cache_entry *entry = get_cache_entry(self, index);
     if (entry->is_altered) {
-      res = page_resolver_write_page(self->page_resolver, entry->page_id,
-                                     (page_t){entry->contents});
-      if (result_is_err(res))
-        return res;
+      TRY(page_resolver_write_page(self->page_resolver, entry->page_id,
+                                   (page_t){entry->contents}));
+      CATCH(error, PROPAGATE)
 
       entry->relevancy_value = LEAST_RELEVANT_VALUE; // TODO think
       entry->is_altered = false;

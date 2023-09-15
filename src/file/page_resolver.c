@@ -55,12 +55,10 @@ result_t page_resolver_read_page(struct page_resolver *self, page_id_t page_id,
 result_t page_resolver_write_page(struct page_resolver *self, page_id_t page_id,
                                   page_t data) {
   ASSERT_NOT_NULL(self, error_source);
-  result_t res;
 
   if (self->was_file_header_altered) {
-    res = write_header(self);
-    if (result_is_err(res))
-      return res;
+    TRY(write_header(self));
+    CATCH(error, PROPAGATE)
   }
   size_t page_size = page_resolver_get_page_size(self);
   uint32_t offset = resolve_page_offset(self, page_size, page_id);
@@ -94,14 +92,13 @@ result_t page_resolver_ctor(struct page_resolver *self, char *file_name,
                             size_t application_header_size,
                             void *default_header) {
   ASSERT_NOT_NULL(self, error_source);
-  result_t res;
 
   struct file_manager *file_manager = file_manager_new();
-  res = file_manager_ctor(file_manager, file_name);
-  if (result_is_err(res)) {
+  TRY(file_manager_ctor(file_manager, file_name));
+  CATCH(error, {
     free(self);
-    return res;
-  }
+    PROPAGATE;
+  })
 
   self->file_manager = file_manager;
   self->application_header_size = application_header_size;
@@ -113,35 +110,34 @@ result_t page_resolver_ctor(struct page_resolver *self, char *file_name,
   if (file_manager_is_file_new(file_manager)) {
     // file is new - initialize headers
     self->was_file_header_altered = true;
-    res = initialize_file_header(file_manager, file_header,
-                                 application_header_size);
-    if (result_is_err(res)) {
+    TRY(initialize_file_header(file_manager, file_header,
+                               application_header_size));
+    CATCH(error, {
       free(application_header);
       file_manager_destroy(file_manager);
       free(self);
-      return res;
-    }
+      PROPAGATE;
+    })
     memcpy(application_header, default_header, application_header_size);
 
-    res = file_manager_write(file_manager, application_header_size,
-                             sizeof(struct file_header), application_header);
-    if (result_is_err(res)) {
+    TRY(file_manager_write(file_manager, application_header_size,
+                           sizeof(struct file_header), application_header));
+    CATCH(error, {
       free(application_header);
       file_manager_destroy(file_manager);
       free(self);
-      return res;
-    }
+    })
   } else {
     // file is not new - read headers
     self->was_file_header_altered = false;
-    res = file_manager_read(file_manager, sizeof(struct file_header), 0,
-                            file_header);
-    if (result_is_err(res)) {
+    TRY(file_manager_read(file_manager, sizeof(struct file_header), 0,
+                          file_header));
+    CATCH(error, {
       free(application_header);
       file_manager_destroy(file_manager);
       free(self);
-      return res;
-    }
+      PROPAGATE;
+    })
 
     if (file_header->format_type != FORMAT_TYPE) {
       free(application_header);
@@ -152,14 +148,14 @@ result_t page_resolver_ctor(struct page_resolver *self, char *file_name,
                                   error_messages[INVALID_HEADER]));
     }
 
-    res = file_manager_read(file_manager, application_header_size,
-                            sizeof(struct file_header), application_header);
-    if (result_is_err(res)) {
+    TRY(file_manager_read(file_manager, application_header_size,
+                          sizeof(struct file_header), application_header));
+    CATCH(error, {
       free(application_header);
       file_manager_destroy(file_manager);
       free(self);
-      return res;
-    }
+      PROPAGATE;
+    })
   }
 
   return OK;

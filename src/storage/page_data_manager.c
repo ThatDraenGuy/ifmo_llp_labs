@@ -23,7 +23,6 @@ bool item_iterator_has_next(struct item_iterator *self) {
 
 result_t item_iterator_next(struct item_iterator *self, item_t *result) {
   ASSERT_NOT_NULL(self, error_source);
-  result_t res;
 
   struct page_data_header *page = self->current_page.data;
 
@@ -32,9 +31,8 @@ result_t item_iterator_next(struct item_iterator *self, item_t *result) {
 
   if (page_is_null(self->current_page) ||
       self->current_item_index + 1 >= page->item_amount) {
-    res = page_iterator_next(self->page_iterator, &self->current_page);
-    if (result_is_err(res))
-      return res;
+    TRY(page_iterator_next(self->page_iterator, &self->current_page));
+    CATCH(error, PROPAGATE)
 
     self->current_item_index = 0;
     page = self->current_page.data;
@@ -152,24 +150,23 @@ static result_t vacuum_page(struct page_data_header *page) {
 
 static result_t vacuum_deleted_items(struct page_data_manager *self,
                                      page_group_id_t page_group_id) {
-  result_t res;
   struct page_iterator *page_it =
       page_group_manager_get_group(self->page_group_manager, page_group_id);
 
   while (page_iterator_has_next(page_it)) {
     page_t page = PAGE_NULL;
-    res = page_iterator_next(page_it, &page);
-    if (result_is_err(res)) {
+    TRY(page_iterator_next(page_it, &page));
+    CATCH(error, {
       page_iterator_destroy(page_it);
-      return res;
-    }
+      PROPAGATE;
+    })
 
     struct page_data_header *page_data_header = page.data;
-    res = vacuum_page(page_data_header);
-    if (result_is_err(res)) {
+    TRY(vacuum_page(page_data_header));
+    CATCH(error, {
       page_iterator_destroy(page_it);
-      return res;
-    }
+      PROPAGATE;
+    })
   }
 
   page_iterator_destroy(page_it);
@@ -183,15 +180,14 @@ struct page_data_manager *page_data_manager_new() {
 result_t page_data_manager_ctor(struct page_data_manager *self,
                                 char *file_name) {
   ASSERT_NOT_NULL(self, error_source);
-  result_t res;
 
   self->page_group_manager = page_group_manager_new();
 
-  res = page_group_manager_ctor(self->page_group_manager, file_name);
-  if (result_is_err(res)) {
+  TRY(page_group_manager_ctor(self->page_group_manager, file_name));
+  CATCH(error, {
     free(self);
-    return res;
-  }
+    PROPAGATE;
+  })
 
   return OK;
 }
@@ -199,22 +195,21 @@ result_t page_data_manager_ctor(struct page_data_manager *self,
 result_t page_data_manager_create_group(struct page_data_manager *self,
                                         page_group_id_t *result) {
   ASSERT_NOT_NULL(self, error_source);
-  result_t res;
 
-  res = page_group_manager_create_group(self->page_group_manager, result);
-  if (result_is_err(res))
-    return res;
+  TRY(page_group_manager_create_group(self->page_group_manager, result));
+  CATCH(error, PROPAGATE)
 
   struct page_iterator *page_it =
       page_group_manager_get_group(self->page_group_manager, *result);
 
   if (page_iterator_has_next(page_it)) {
     page_t page = PAGE_NULL;
-    res = page_iterator_next(page_it, &page);
-    if (result_is_err(res)) {
+    TRY(page_iterator_next(page_it, &page));
+    CATCH(error, {
       page_iterator_destroy(page_it);
-      return res;
-    }
+      PROPAGATE;
+    })
+
     struct page_data_header *page_header = page.data;
     initialize_page(self, page_header);
   }
@@ -225,16 +220,14 @@ result_t page_data_manager_create_group(struct page_data_manager *self,
 result_t page_data_manager_insert(struct page_data_manager *self,
                                   page_group_id_t page_group_id, item_t item) {
   ASSERT_NOT_NULL(self, error_source);
-  result_t res;
 
   struct page_iterator *page_it =
       page_group_manager_get_group(self->page_group_manager, page_group_id);
 
   while (page_iterator_has_next(page_it)) {
     page_t page = PAGE_NULL;
-    res = page_iterator_next(page_it, &page);
-    if (result_is_err(res))
-      return res;
+    TRY(page_iterator_next(page_it, &page));
+    CATCH(error, PROPAGATE)
 
     struct page_data_header *page_header = page.data;
 
@@ -247,9 +240,9 @@ result_t page_data_manager_insert(struct page_data_manager *self,
   }
 
   page_t page = PAGE_NULL;
-  res = page_group_manager_add_page(self->page_group_manager, page_it, &page);
-  if (result_is_err(res))
-    return res;
+  TRY(page_group_manager_add_page(self->page_group_manager, page_it, &page));
+  CATCH(error, PROPAGATE)
+
   struct page_data_header *page_header = page.data;
 
   page_iterator_destroy(page_it);
@@ -261,11 +254,9 @@ result_t page_data_manager_insert(struct page_data_manager *self,
 result_t page_data_manager_flush(struct page_data_manager *self,
                                  page_group_id_t page_group_id) {
   ASSERT_NOT_NULL(self, error_source);
-  result_t res;
 
-  res = vacuum_deleted_items(self, page_group_id);
-  if (result_is_err(res))
-    return res;
+  TRY(vacuum_deleted_items(self, page_group_id));
+  CATCH(error, PROPAGATE)
   return page_group_manager_flush(self->page_group_manager);
 }
 

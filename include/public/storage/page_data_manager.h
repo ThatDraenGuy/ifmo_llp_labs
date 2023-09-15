@@ -5,9 +5,9 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_STORAGE_PAGE_DATA_MANAGER_H
 #define LLP_LAB_INCLUDE_PUBLIC_STORAGE_PAGE_DATA_MANAGER_H
 
-#include "public/file/page.h"
-#include "public/storage/item.h"
-#include "public/storage/page_group.h"
+#include "domain/item.h"
+#include "domain/page_group.h"
+#include "public/file/domain/page.h"
 #include "public/util/result.h"
 #include <stdbool.h>
 #include <stddef.h>

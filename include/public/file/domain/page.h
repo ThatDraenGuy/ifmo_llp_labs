@@ -2,8 +2,8 @@
 // Created by draen on 09.09.23.
 //
 
-#ifndef LLP_LAB_INCLUDE_PUBLIC_FILE_PAGE_H
-#define LLP_LAB_INCLUDE_PUBLIC_FILE_PAGE_H
+#ifndef LLP_LAB_INCLUDE_PUBLIC_FILE_DOMAIN_PAGE_H
+#define LLP_LAB_INCLUDE_PUBLIC_FILE_DOMAIN_PAGE_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -36,4 +36,4 @@ static inline bool page_is_null(page_t page) {
 
 // static inline page_t page_from(void *data) { return (page_t){data}; }
 
-#endif // LLP_LAB_INCLUDE_PUBLIC_FILE_PAGE_H
+#endif // LLP_LAB_INCLUDE_PUBLIC_FILE_DOMAIN_PAGE_H

@@ -5,9 +5,9 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_ERROR_ERRORS_COMMON_H
 #define LLP_LAB_INCLUDE_PUBLIC_ERROR_ERRORS_COMMON_H
 
-#define ASSERT_NOT_NULL(object, error_source)                                  \
-  if (object == NULL)                                                          \
-  return result_err(error_common(error_source, ERR_COMMON_NULL_POINTER))
+#define ASSERT_NOT_NULL(Object, ErrorSource)                                   \
+  if (Object == NULL)                                                          \
+  return result_err(error_common(ErrorSource, ERR_COMMON_NULL_POINTER))
 
 #include "public/error/error.h"
 

@@ -5,8 +5,7 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_FILE_PAGE_MANAGER_H
 #define LLP_LAB_INCLUDE_PUBLIC_FILE_PAGE_MANAGER_H
 
-#include "public/file/page_manager.h"
-#include "public/file/page_resolver.h"
+#include "page_resolver.h"
 #include "public/util/result.h"
 
 struct page_manager;

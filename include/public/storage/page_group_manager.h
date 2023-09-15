@@ -5,7 +5,7 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_STORAGE_PAGE_GROUP_MANAGER_H
 #define LLP_LAB_INCLUDE_PUBLIC_STORAGE_PAGE_GROUP_MANAGER_H
 
-#include "public/storage/page_group.h"
+#include "domain/page_group.h"
 #include "public/util/result.h"
 
 struct page_group_manager;
