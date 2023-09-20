@@ -30,11 +30,11 @@ static bool verify_size(item_t item, const size_t *item_offset,
   static result_t read_##TypeName(item_t item, size_t *item_offset,            \
                                   Type *result) {                              \
     if (!verify_size(item, item_offset, sizeof(Type)))                         \
-      return result_err(error_self(INCORRECT_ITEM_SIZE));                      \
+      THROW(error_self(INCORRECT_ITEM_SIZE));                                  \
                                                                                \
     *result = *(Type *)(item.data + *item_offset);                             \
     *item_offset += sizeof(Type);                                              \
-    return OK;                                                                 \
+    OK;                                                                        \
   }
 READ_IMPL(int32_t, int32);
 READ_IMPL(uint64_t, uint64);
@@ -43,29 +43,29 @@ READ_IMPL(float, float);
 static result_t read_string(item_t item, size_t *item_offset, char **result) {
   uint64_t string_size = 0;
   TRY(read_uint64(item, item_offset, &string_size));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   if (!verify_size(item, item_offset, string_size))
-    return result_err(error_self(INCORRECT_ITEM_SIZE));
+    THROW(error_self(INCORRECT_ITEM_SIZE));
 
   *result = malloc(sizeof(char) * string_size);
 
   strcpy(*result, (char *)(item.data + *item_offset));
   *item_offset += string_size;
-  return OK;
+  OK;
 }
 
 static result_t read_bool(item_t item, size_t *item_offset, bool *result) {
   size_t bool_item_size = sizeof(uint8_t);
   if (!verify_size(item, item_offset, bool_item_size))
-    return result_err(error_self(INCORRECT_ITEM_SIZE));
+    THROW(error_self(INCORRECT_ITEM_SIZE));
 
   uint8_t value = *(uint8_t *)(item.data + *item_offset);
   if (value != false && value != true)
-    return result_err(error_self(INVALID_DATA));
+    THROW(error_self(INVALID_DATA));
   *result = (bool)value;
   *item_offset += bool_item_size;
-  return OK;
+  OK;
 }
 
 static result_t deserialize_column(item_t item, size_t *item_offset,
@@ -75,54 +75,54 @@ static result_t deserialize_column(item_t item, size_t *item_offset,
   case COLUMN_TYPE_UINT64: {
     uint64_t value = 0;
     TRY(read_uint64(item, item_offset, &value));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     TRY(record_insert(target, column_schema->name, value));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
     break;
   }
   case COLUMN_TYPE_INT32: {
     int32_t value = 0;
     TRY(read_int32(item, item_offset, &value));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     TRY(record_insert(target, column_schema->name, value));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
     break;
   }
   case COLUMN_TYPE_FLOAT: {
     float value = 0;
     TRY(read_float(item, item_offset, &value));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     TRY(record_insert(target, column_schema->name, value));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
     break;
   }
   case COLUMN_TYPE_STRING: {
     char *value = NULL;
     TRY(read_string(item, item_offset, &value));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     TRY(record_insert(target, column_schema->name, value));
     CATCH(error, {
       free(value);
-      PROPAGATE;
+      THROW(error);
     })
     break;
   }
   case COLUMN_TYPE_BOOL: {
     bool value = false;
     TRY(read_bool(item, item_offset, &value));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     TRY(record_insert(target, column_schema->name, value));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
     break;
   }
   }
 
-  return OK;
+  OK;
 }
 
 result_t record_deserialize(item_t item, struct table_schema *schema,
@@ -131,7 +131,7 @@ result_t record_deserialize(item_t item, struct table_schema *schema,
 
   if (target->column_amount - target->current_entry_index <
       table_schema_get_column_amount(schema))
-    return result_err(error_self(INCORRECT_RECORD_SIZE));
+    THROW(error_self(INCORRECT_RECORD_SIZE));
 
   size_t current_item_offset = 0;
   struct column_schema_iterator *it = table_schema_get_columns(schema);
@@ -140,18 +140,18 @@ result_t record_deserialize(item_t item, struct table_schema *schema,
     TRY(column_schema_iterator_next(it, &column_schema));
     CATCH(error, {
       column_schema_iterator_destroy(it);
-      PROPAGATE;
+      THROW(error);
     })
 
     TRY(deserialize_column(item, &current_item_offset, column_schema, target));
     CATCH(error, {
       column_schema_iterator_destroy(it);
-      PROPAGATE;
+      THROW(error);
     })
   }
   column_schema_iterator_destroy(it);
 
-  return OK;
+  OK;
 }
 
 static void calculate_column_size(column_value_t column_value,

@@ -37,20 +37,20 @@ static result_t initialize_meta_page(struct table_manager *self,
                                      struct meta_contents *meta_contents) {
   page_group_id_t meta_group = PAGE_GROUP_ID_NULL;
   TRY(page_data_manager_create_group(self->page_data_manager, &meta_group));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   page_group_id_t table_data_table_group = PAGE_GROUP_ID_NULL;
   TRY(page_data_manager_create_group(self->page_data_manager,
                                      &table_data_table_group));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   page_group_id_t table_columns_table_group = PAGE_GROUP_ID_NULL;
   TRY(page_data_manager_create_group(self->page_data_manager,
                                      &table_columns_table_group));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   TRY(page_data_manager_set_meta_group_id(self->page_data_manager, meta_group));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   meta_contents->table_data_table_page_group_id = table_data_table_group;
   meta_contents->table_columns_table_page_group_id = table_columns_table_group;
@@ -67,22 +67,22 @@ static result_t get_data_from_meta_page(struct table_manager *self,
       page_data_manager_get_items(self->page_data_manager, meta_page_group_id);
 
   if (!item_iterator_has_next(it)) {
-    return result_err(error_self(META_PAGE_CONTENTS_MISSING));
+    THROW(error_self(META_PAGE_CONTENTS_MISSING));
   }
 
   item_t item = ITEM_NULL;
   TRY(item_iterator_next(it, &item));
   CATCH(error, {
     item_iterator_destroy(it);
-    PROPAGATE;
+    THROW(error);
   })
 
   if (item.size != sizeof(struct meta_contents))
-    return result_err(error_self(META_PAGE_CONTENTS_INVALID));
+    THROW(error_self(META_PAGE_CONTENTS_INVALID));
   memcpy(meta_contents, item.data, item.size);
 
   item_iterator_destroy(it);
-  return OK;
+  OK;
 }
 
 static void initialize_meta_tables(struct table_manager *self,
@@ -125,7 +125,7 @@ result_t table_manager_ctor(struct table_manager *self, char *file_name) {
   TRY(page_data_manager_ctor(page_data_manager, file_name));
   CATCH(error, {
     free(self);
-    PROPAGATE;
+    THROW(error);
   })
   self->page_data_manager = page_data_manager;
 
@@ -139,7 +139,7 @@ result_t table_manager_ctor(struct table_manager *self, char *file_name) {
       page_data_manager_destroy(page_data_manager);
       free(meta_contents);
       free(self);
-      PROPAGATE;
+      THROW(error);
     })
   } else {
     TRY(get_data_from_meta_page(self, meta_group_id, meta_contents));
@@ -147,13 +147,13 @@ result_t table_manager_ctor(struct table_manager *self, char *file_name) {
       page_data_manager_destroy(page_data_manager);
       free(meta_contents);
       free(self);
-      PROPAGATE;
+      THROW(error);
     })
   }
   initialize_meta_tables(self, meta_contents);
 
   free(meta_contents);
-  return OK;
+  OK;
 }
 
 static result_t find_first_maybe_delete(struct table_manager *self,
@@ -173,14 +173,14 @@ static result_t find_first_maybe_delete(struct table_manager *self,
     TRY(item_iterator_next(it, &item));
     CATCH(error, {
       item_iterator_destroy(it);
-      PROPAGATE;
+      THROW(error);
     })
 
     TRY(record_deserialize(item, table->table_schema, record));
     CATCH(error, {
       item_iterator_destroy(it);
       record_destroy(record);
-      PROPAGATE;
+      THROW(error);
     })
 
     bool predicate_result = false;
@@ -188,19 +188,19 @@ static result_t find_first_maybe_delete(struct table_manager *self,
     CATCH(error, {
       item_iterator_destroy(it);
       record_destroy(record);
-      PROPAGATE;
+      THROW(error);
     })
     if (predicate_result) {
       if (do_delete)
         item_iterator_delete_item(it);
       item_iterator_destroy(it);
       *result = record;
-      return OK;
+      OK;
     }
   }
 
   item_iterator_destroy(it);
-  return result_err(error_self(NO_RECORD_FOUND));
+  THROW(error_self(NO_RECORD_FOUND));
 }
 
 result_t table_manager_find_first(struct table_manager *self,
@@ -226,20 +226,20 @@ result_t record_iterator_next(struct record_iterator *self,
 
     item_t new_item = ITEM_NULL;
     TRY(item_iterator_next(self->item_it, &new_item));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     TRY(record_deserialize(new_item, self->table_schema, self->next_record));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     bool predicate_res = false;
     TRY(predicate_apply(self->predicate, self->next_record, &predicate_res));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
     if (predicate_res) {
-      return OK;
+      OK;
     }
   }
   self->is_empty = true;
-  return OK;
+  OK;
 }
 
 void record_iterator_destroy(struct record_iterator *self) {
@@ -275,10 +275,10 @@ result_t table_manager_find(struct table_manager *self, struct table *table,
   TRY(record_iterator_next(*result, &record));
   CATCH(error, {
     record_iterator_destroy(*result);
-    PROPAGATE;
+    THROW(error);
   })
 
-  return OK;
+  OK;
 }
 
 result_t table_manager_insert(struct table_manager *self, struct table *table,
@@ -291,11 +291,11 @@ result_t table_manager_insert(struct table_manager *self, struct table *table,
                                item));
   CATCH(error, {
     item_destroy(item);
-    PROPAGATE;
+    THROW(error);
   })
 
   item_destroy(item);
-  return OK;
+  OK;
 }
 
 result_t table_manager_delete(struct table_manager *self, struct table *table,
@@ -313,14 +313,14 @@ result_t table_manager_delete(struct table_manager *self, struct table *table,
     CATCH(error, {
       item_iterator_destroy(it);
       record_destroy(record);
-      PROPAGATE;
+      THROW(error);
     })
 
     TRY(record_deserialize(item, table->table_schema, record));
     CATCH(error, {
       item_iterator_destroy(it);
       record_destroy(record);
-      PROPAGATE;
+      THROW(error);
     })
 
     bool predicate_res = false;
@@ -328,7 +328,7 @@ result_t table_manager_delete(struct table_manager *self, struct table *table,
     CATCH(error, {
       item_iterator_destroy(it);
       record_destroy(record);
-      PROPAGATE;
+      THROW(error);
     })
     if (predicate_res)
       item_iterator_delete_item(it);
@@ -346,7 +346,7 @@ result_t table_manager_create_table(struct table_manager *self,
 
   page_group_id_t table_group = PAGE_GROUP_ID_NULL;
   TRY(page_data_manager_create_group(self->page_data_manager, &table_group));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   struct record *table_data_record = record_new();
   record_ctor(table_data_record, 3);
@@ -360,7 +360,7 @@ result_t table_manager_create_table(struct table_manager *self,
   TRY(table_manager_insert(self, self->table_data_table, table_data_record));
   CATCH(error, {
     record_destroy(table_data_record);
-    PROPAGATE;
+    THROW(error);
   })
   record_destroy(table_data_record);
 
@@ -370,7 +370,7 @@ result_t table_manager_create_table(struct table_manager *self,
     TRY(column_schema_iterator_next(column_it, &column_schema));
     CATCH(error, {
       column_schema_iterator_destroy(column_it);
-      PROPAGATE;
+      THROW(error);
     })
 
     struct record *column_record = record_new();
@@ -386,7 +386,7 @@ result_t table_manager_create_table(struct table_manager *self,
     CATCH(error, {
       column_schema_iterator_destroy(column_it);
       record_destroy(column_record);
-      PROPAGATE;
+      THROW(error);
     })
     record_destroy(column_record);
   }
@@ -395,7 +395,7 @@ result_t table_manager_create_table(struct table_manager *self,
   (*result) = table_new();
   table_ctor((*result), schema, table_group);
 
-  return OK;
+  OK;
 }
 
 result_t table_manager_get_table(struct table_manager *self, char *table_name,
@@ -411,7 +411,7 @@ result_t table_manager_get_table(struct table_manager *self, char *table_name,
                               false, &table_data_record));
   CATCH(error, {
     predicate_destroy(table_name_equal);
-    PROPAGATE;
+    THROW(error);
   })
   predicate_destroy(table_name_equal);
 
@@ -420,7 +420,7 @@ result_t table_manager_get_table(struct table_manager *self, char *table_name,
                  &table_id));
   CATCH(error, {
     record_destroy(table_data_record);
-    PROPAGATE;
+    THROW(error);
   })
 
   page_group_id_t table_page_group_id = PAGE_GROUP_ID_NULL;
@@ -428,7 +428,7 @@ result_t table_manager_get_table(struct table_manager *self, char *table_name,
                  &table_page_group_id.bytes));
   CATCH(error, {
     record_destroy(table_data_record);
-    PROPAGATE;
+    THROW(error);
   })
   record_destroy(table_data_record);
 
@@ -439,7 +439,7 @@ result_t table_manager_get_table(struct table_manager *self, char *table_name,
   struct record_iterator *columns_it = NULL;
   TRY(table_manager_find(self, self->table_columns_table, table_id_equal,
                          &columns_it));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   struct table_schema *schema = table_schema_new();
   while (record_iterator_has_next(columns_it)) {
@@ -448,7 +448,7 @@ result_t table_manager_get_table(struct table_manager *self, char *table_name,
     CATCH(error, {
       record_iterator_destroy(columns_it);
       table_schema_destroy(schema);
-      PROPAGATE;
+      THROW(error);
     })
 
     uint64_t column_type_index;
@@ -457,7 +457,7 @@ result_t table_manager_get_table(struct table_manager *self, char *table_name,
     CATCH(error, {
       record_iterator_destroy(columns_it);
       table_schema_destroy(schema);
-      PROPAGATE;
+      THROW(error);
     })
     column_type_t column_type = column_type_index;
 
@@ -467,7 +467,7 @@ result_t table_manager_get_table(struct table_manager *self, char *table_name,
     CATCH(error, {
       record_iterator_destroy(columns_it);
       table_schema_destroy(schema);
-      PROPAGATE;
+      THROW(error);
     })
 
     table_schema_add_column(schema, column_name, column_type);
@@ -478,7 +478,7 @@ result_t table_manager_get_table(struct table_manager *self, char *table_name,
   table->table_schema = schema;
   table->page_group_id = table_page_group_id;
   *result = table;
-  return OK;
+  OK;
 }
 
 result_t table_manager_drop_table(struct table_manager *self,
@@ -492,14 +492,14 @@ result_t table_manager_drop_table(struct table_manager *self,
   struct record *table_data_record = NULL;
   TRY(find_first_maybe_delete(self, self->table_data_table, table_name_equal,
                               true, &table_data_record));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   uint64_t table_id = 0;
   TRY(record_get(table_data_record, TABLE_DATA_TABLE_COLUMN_TABLE_ID,
                  &table_id));
   CATCH(error, {
     record_destroy(table_data_record);
-    PROPAGATE;
+    THROW(error);
   })
 
   page_group_id_t group_id = PAGE_GROUP_ID_NULL;
@@ -509,7 +509,7 @@ result_t table_manager_drop_table(struct table_manager *self,
   CATCH(error, {
     record_destroy(table_data_record);
 
-    PROPAGATE;
+    THROW(error);
   })
   record_destroy(table_data_record);
 
@@ -520,12 +520,12 @@ result_t table_manager_drop_table(struct table_manager *self,
   TRY(table_manager_delete(self, self->table_columns_table, column_delete));
   CATCH(error, {
     predicate_destroy(column_delete);
-    PROPAGATE;
+    THROW(error);
   })
 
   TRY(page_data_manager_delete_group(self->page_data_manager, group_id));
-  CATCH(error, PROPAGATE)
-  return OK;
+  CATCH(error, THROW(error))
+  OK;
 }
 
 result_t table_manager_flush(struct table_manager *self, struct table *table) {

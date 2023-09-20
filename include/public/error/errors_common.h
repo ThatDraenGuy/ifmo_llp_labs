@@ -7,7 +7,7 @@
 
 #define ASSERT_NOT_NULL(Object, ErrorSource)                                   \
   if (Object == NULL)                                                          \
-  return result_err(error_common(ErrorSource, ERR_COMMON_NULL_POINTER))
+  THROW(error_common(ErrorSource, ERR_COMMON_NULL_POINTER))
 
 #include "public/error/error.h"
 

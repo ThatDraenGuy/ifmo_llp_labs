@@ -45,7 +45,7 @@ result_t page_resolver_get_new_page_id(struct page_resolver *self,
   ASSERT_NOT_NULL(self, error_source);
   *result_id = (page_id_t){++self->file_header.page_amount};
   self->was_file_header_altered = true;
-  return OK;
+  OK;
 }
 
 result_t page_resolver_read_page(struct page_resolver *self, page_id_t page_id,
@@ -64,7 +64,7 @@ result_t page_resolver_write_page(struct page_resolver *self, page_id_t page_id,
 
   if (self->was_file_header_altered) {
     TRY(write_header(self));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
   }
   size_t page_size = page_resolver_get_page_size(self);
   uint32_t offset = resolve_page_offset(self, page_size, page_id);
@@ -113,7 +113,7 @@ result_t page_resolver_ctor(struct page_resolver *self, char *file_name,
   TRY(file_manager_ctor(file_manager, file_name));
   CATCH(error, {
     free(self);
-    PROPAGATE;
+    THROW(error);
   })
 
   self->file_manager = file_manager;
@@ -132,7 +132,7 @@ result_t page_resolver_ctor(struct page_resolver *self, char *file_name,
       free(application_header);
       file_manager_destroy(file_manager);
       free(self);
-      PROPAGATE;
+      THROW(error);
     })
     memcpy(application_header, default_header, application_header_size);
 
@@ -152,16 +152,15 @@ result_t page_resolver_ctor(struct page_resolver *self, char *file_name,
       free(application_header);
       file_manager_destroy(file_manager);
       free(self);
-      PROPAGATE;
+      THROW(error);
     })
 
     if (file_header->format_type != FORMAT_TYPE) {
       free(application_header);
       file_manager_destroy(file_manager);
       free(self);
-      return result_err(error_new(error_source, error_type,
-                                  (error_code_t){INVALID_HEADER},
-                                  error_messages[INVALID_HEADER]));
+      THROW(error_new(error_source, error_type, (error_code_t){INVALID_HEADER},
+                      error_messages[INVALID_HEADER]));
     }
 
     TRY(file_manager_read(file_manager, application_header_size,
@@ -170,9 +169,9 @@ result_t page_resolver_ctor(struct page_resolver *self, char *file_name,
       free(application_header);
       file_manager_destroy(file_manager);
       free(self);
-      PROPAGATE;
+      THROW(error);
     })
   }
 
-  return OK;
+  OK;
 }

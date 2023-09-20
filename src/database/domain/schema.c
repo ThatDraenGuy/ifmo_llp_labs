@@ -47,7 +47,7 @@ result_t table_schema_add_column(struct table_schema *self, char *column_name,
   ASSERT_NOT_NULL(self, error_source);
 
   if (self->current_column_index >= self->column_amount)
-    return result_err(error_self(SCHEMA_SIZE_EXCEEDED));
+    THROW(error_self(SCHEMA_SIZE_EXCEEDED));
 
   self->columns[self->current_column_index].name =
       column_name; // TODO think about strings
@@ -55,7 +55,7 @@ result_t table_schema_add_column(struct table_schema *self, char *column_name,
 
   self->current_column_index++;
 
-  return OK;
+  OK;
 }
 
 void table_schema_destroy(struct table_schema *self) {
@@ -85,11 +85,11 @@ result_t column_schema_iterator_next(struct column_schema_iterator *self,
   ASSERT_NOT_NULL(self, error_source);
 
   if (!column_schema_iterator_has_next(self))
-    return result_err(error_common(error_source, ERR_COMMON_ITER_OUT_OF_RANGE));
+    THROW(error_common(error_source, ERR_COMMON_ITER_OUT_OF_RANGE));
 
   *result = &self->columns[self->current_index];
   self->current_index++;
-  return OK;
+  OK;
 }
 
 void column_schema_iterator_destroy(struct column_schema_iterator *self) {

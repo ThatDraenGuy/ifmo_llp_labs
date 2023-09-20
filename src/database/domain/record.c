@@ -42,7 +42,7 @@ result_t record_insert_value(struct record *self, char *column_name,
                              column_value_t value, column_type_t type) {
   ASSERT_NOT_NULL(self, error_source);
   if (self->current_entry_index >= self->column_amount) {
-    return result_err(error_self(RECORD_SIZE_EXCEEDED));
+    THROW(error_self(RECORD_SIZE_EXCEEDED));
   }
 
   self->entries[self->current_entry_index].schema.name =
@@ -52,7 +52,7 @@ result_t record_insert_value(struct record *self, char *column_name,
 
   self->current_entry_index++;
 
-  return OK;
+  OK;
 }
 
 result_t record_insert_int32(struct record *self, char *column_name,
@@ -91,23 +91,23 @@ static result_t get_entry_at(struct record *self, size_t column_index,
                              struct record_entry **result) {
   ASSERT_NOT_NULL(self, error_source);
   if (column_index >= self->column_amount)
-    return result_err(error_self(INDEX_OUT_OF_BOUNDS));
+    THROW(error_self(INDEX_OUT_OF_BOUNDS));
 
   *result = &self->entries[column_index];
-  return OK;
+  OK;
 }
 
 result_t record_copy_into(struct record *self, struct record *target) {
   for (size_t index = 0; index < self->current_entry_index; index++) {
     struct record_entry *entry = NULL;
     TRY(get_entry_at(self, index, &entry));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     TRY(record_insert_value(target, entry->schema.name, entry->value,
                             entry->schema.type));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
   }
-  return OK;
+  OK;
 }
 
 result_t record_get_value_at(struct record *self, size_t column_index,
@@ -115,11 +115,11 @@ result_t record_get_value_at(struct record *self, size_t column_index,
                              column_type_t *result_type) {
   struct record_entry *entry = NULL;
   TRY(get_entry_at(self, column_index, &entry));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   *result_value = entry->value;
   *result_type = entry->schema.type;
-  return OK;
+  OK;
 }
 
 #define RECORD_GET_AT_IMPL(Type, TypeName, ColumnTypeValue)                    \
@@ -127,13 +127,13 @@ result_t record_get_value_at(struct record *self, size_t column_index,
                                       size_t column_index, Type *result) {     \
     ASSERT_NOT_NULL(self, error_source);                                       \
     if (column_index >= self->column_amount)                                   \
-      return result_err(error_self(INDEX_OUT_OF_BOUNDS));                      \
+      THROW(error_self(INDEX_OUT_OF_BOUNDS));                                  \
                                                                                \
     struct record_entry *entry = &self->entries[column_index];                 \
     if (entry->schema.type != ColumnTypeValue)                                 \
-      return result_err(error_self(INCORRECT_COLUMN_TYPE));                    \
+      THROW(error_self(INCORRECT_COLUMN_TYPE));                                \
     *result = entry->value.TypeName##_value;                                   \
-    return OK;                                                                 \
+    OK;                                                                        \
   }
 RECORD_GET_AT_IMPL(int32_t, int32, COLUMN_TYPE_INT32);
 RECORD_GET_AT_IMPL(uint64_t, uint64, COLUMN_TYPE_UINT64);
@@ -158,10 +158,10 @@ result_t record_get_value(struct record *self, char *column_name,
 
   struct record_entry *entry = find_entry(self, column_name);
   if (entry == NULL)
-    return result_err(error_self(UNKNOWN_COLUMN_NAME));
+    THROW(error_self(UNKNOWN_COLUMN_NAME));
 
   *result = entry->value;
-  return OK;
+  OK;
 }
 
 #define RECORD_GET_IMPL(Type, TypeName, ColumnTypeValue)                       \
@@ -171,12 +171,12 @@ result_t record_get_value(struct record *self, char *column_name,
                                                                                \
     struct record_entry *entry = find_entry(self, column_name);                \
     if (entry == NULL)                                                         \
-      return result_err(error_self(UNKNOWN_COLUMN_NAME));                      \
+      THROW(error_self(UNKNOWN_COLUMN_NAME));                                  \
                                                                                \
     if (entry->schema.type != ColumnTypeValue)                                 \
-      return result_err(error_self(INCORRECT_COLUMN_TYPE));                    \
+      THROW(error_self(INCORRECT_COLUMN_TYPE));                                \
     *result = entry->value.TypeName##_value;                                   \
-    return OK;                                                                 \
+    OK;                                                                        \
   }
 RECORD_GET_IMPL(int32_t, int32, COLUMN_TYPE_INT32);
 RECORD_GET_IMPL(uint64_t, uint64, COLUMN_TYPE_UINT64);

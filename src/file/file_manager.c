@@ -34,12 +34,12 @@ result_t file_manager_ctor(struct file_manager *self, char *file_name) {
 
   if (file == NULL) {
     free(self);
-    return result_err(error_self());
+    THROW(error_self());
   }
 
   self->file = file;
   self->is_new = !file_exists;
-  return OK;
+  OK;
 }
 
 bool file_manager_is_file_new(struct file_manager *self) {
@@ -50,23 +50,23 @@ result_t file_manager_read(struct file_manager *self, size_t size,
                            uint32_t offset, void *data) {
   ASSERT_NOT_NULL(self, error_source);
   if (fseek(self->file, offset, SEEK_SET) != 0) {
-    return result_err(error_self());
+    THROW(error_self());
   }
 
   if (fread(data, size, 1, self->file) == 0)
-    return result_err(error_self()); // TODO think
-  return OK;
+    THROW(error_self()); // TODO think
+  OK;
 }
 
 result_t file_manager_write(struct file_manager *self, size_t size,
                             uint32_t offset, void *data) {
   ASSERT_NOT_NULL(self, error_source);
   if (fseek(self->file, offset, SEEK_SET) != 0)
-    return result_err(error_self());
+    THROW(error_self());
 
   if (fwrite(data, size, 1, self->file) == 0)
-    return result_err(error_self()); // TODO think
-  return OK;
+    THROW(error_self()); // TODO think
+  OK;
 }
 
 void file_manager_destroy(struct file_manager *self) {

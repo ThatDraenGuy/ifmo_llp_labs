@@ -33,7 +33,7 @@ literal_predicate_value_get_value(struct predicate_value *predicate_value,
   struct literal_predicate_value *self =
       (struct literal_predicate_value *)predicate_value;
   *result = self->value;
-  return OK;
+  OK;
 }
 
 #define LITERAL_IMPL(Type, TypeName, ColumnTypeValue)                          \
@@ -103,27 +103,27 @@ void predicate_destroy(struct predicate *self) { self->destroy_impl(self); }
     switch (comparison_operator) {                                             \
     case EQ: {                                                                 \
       *result = first == second;                                               \
-      return OK;                                                               \
+      OK;                                                                      \
     }                                                                          \
     case NEQ: {                                                                \
       *result = first != second;                                               \
-      return OK;                                                               \
+      OK;                                                                      \
     }                                                                          \
     case LESS: {                                                               \
       *result = first < second;                                                \
-      return OK;                                                               \
+      OK;                                                                      \
     }                                                                          \
     case LEQ: {                                                                \
       *result = first <= second;                                               \
-      return OK;                                                               \
+      OK;                                                                      \
     }                                                                          \
     case GREATER: {                                                            \
       *result = first > second;                                                \
-      return OK;                                                               \
+      OK;                                                                      \
     }                                                                          \
     case GEQ: {                                                                \
       *result - first >= second;                                               \
-      return OK;                                                               \
+      OK;                                                                      \
     }                                                                          \
     }                                                                          \
   }
@@ -138,29 +138,30 @@ static result_t compare_string(char *first, char *second,
   switch (comparison_operator) {
   case EQ: {
     *result = strcmp(first, second) == 0;
-    return OK;
+    break;
   }
   case NEQ: {
     *result = strcmp(first, second) != 0;
-    return OK;
+    break;
   }
   case LESS: {
     *result = strcmp(first, second) < 0;
-    return OK;
+    break;
   }
   case LEQ: {
     *result = strcmp(first, second) <= 0;
-    return OK;
+    break;
   }
   case GREATER: {
     *result = strcmp(first, second) > 0;
-    return OK;
+    break;
   }
   case GEQ: {
     *result = strcmp(first, second) >= 0;
-    return OK;
+    break;
   }
   }
+  OK;
 }
 
 static result_t predicate_of_impl_apply(struct predicate *predicate,
@@ -170,15 +171,15 @@ static result_t predicate_of_impl_apply(struct predicate *predicate,
   column_type_t first_type = self->first->type;
   column_type_t second_type = self->second->type;
   if (first_type != second_type)
-    return result_err(error_self(NON_MATCHING_TYPES));
+    THROW(error_self(NON_MATCHING_TYPES));
 
   column_value_t first_value = {0};
   TRY(self->first->get_value_impl(self->first, record, &first_value));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   column_value_t second_value = {0};
   TRY(self->second->get_value_impl(self->second, record, &second_value));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   switch (first_type) {
   case COLUMN_TYPE_UINT64:
@@ -231,34 +232,34 @@ static result_t predicate_logical_impl_apply(struct predicate *predicate,
   case AND: {
     bool first = false;
     TRY(self->first->apply_impl(self->first, record, &first));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     bool second = false;
     TRY(self->second->apply_impl(self->second, record, &second));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     *result = first && second;
-    return OK;
+    OK;
   }
   case OR: {
     bool first = false;
     TRY(self->first->apply_impl(self->first, record, &first));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     bool second = false;
     TRY(self->second->apply_impl(self->second, record, &second));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     *result = first || second;
-    return OK;
+    OK;
   }
   case NOT: {
     bool first = false;
     TRY(self->first->apply_impl(self->first, record, &first));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     *result = !first;
-    return OK;
+    OK;
   }
   }
 }

@@ -22,19 +22,18 @@ result_t page_iterator_next(struct page_iterator *self, page_t *result) {
   ASSERT_NOT_NULL(self, error_source);
 
   if (!page_iterator_has_next(self))
-    return result_err(
-        error_common(iterator_error_source, ERR_COMMON_ITER_OUT_OF_RANGE));
+    THROW(error_common(iterator_error_source, ERR_COMMON_ITER_OUT_OF_RANGE));
 
   TRY(page_manager_get_page(self->page_manager, self->next_page_id,
                             &self->current_page));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   // skip page_header for the resulting page
   result->data = self->current_page.data + sizeof(struct page_header);
 
   struct page_header *page_header = self->current_page.data;
   self->next_page_id = page_header->next;
-  return OK;
+  OK;
 }
 
 void page_iterator_destroy(struct page_iterator *self) { free(self); }
@@ -69,12 +68,12 @@ static result_t get_new_page(struct page_group_manager *self, page_t *result,
 static result_t create_page(struct page_group_manager *self, page_t *result,
                             page_id_t *result_id) {
   TRY(get_new_page(self, result, result_id));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   struct page_header *page_header = result->data;
   page_header->next = PAGE_ID_NULL;
 
-  return OK;
+  OK;
 }
 
 struct page_group_manager *page_group_manager_new() {
@@ -97,7 +96,7 @@ result_t page_group_manager_ctor(struct page_group_manager *self,
   CATCH(error, {
     free(default_header);
     free(self);
-    PROPAGATE;
+    THROW(error);
   })
 
   free(default_header);
@@ -106,11 +105,11 @@ result_t page_group_manager_ctor(struct page_group_manager *self,
   TRY(page_manager_ctor(page_manager, page_resolver, 10));
   CATCH(error, {
     free(self);
-    PROPAGATE;
+    THROW(error);
   })
 
   self->page_manager = page_manager;
-  return OK;
+  OK;
 }
 
 page_group_id_t
@@ -134,7 +133,7 @@ result_t page_group_manager_add_page(struct page_group_manager *self,
 
   page_id_t page_id = PAGE_ID_NULL;
   TRY(create_page(self, result, &page_id));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   struct page_header *page_header = it->current_page.data;
   struct page_header *new_page_header = result->data;
@@ -145,7 +144,7 @@ result_t page_group_manager_add_page(struct page_group_manager *self,
   }
   page_header->next = page_id;
 
-  return OK;
+  OK;
 }
 
 result_t page_group_manager_create_group(struct page_group_manager *self,
@@ -155,10 +154,10 @@ result_t page_group_manager_create_group(struct page_group_manager *self,
   page_t new_page = PAGE_NULL;
   page_id_t new_page_id = PAGE_ID_NULL;
   TRY(create_page(self, &new_page, &new_page_id));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   *result = (page_group_id_t){new_page_id.bytes};
-  return OK;
+  OK;
 }
 
 result_t page_group_manager_delete_group(struct page_group_manager *self,
@@ -176,14 +175,14 @@ result_t page_group_manager_delete_group(struct page_group_manager *self,
     application_header->first_free_page = to_be_freed_page_id;
 
     TRY(page_manager_get_page(self->page_manager, to_be_freed_page_id, &page));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     header = page.data;
   } else {
     // update next page in free page chain
     TRY(page_manager_get_page(self->page_manager,
                               application_header->last_free_page, &page));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     header = page.data;
     header->next = to_be_freed_page_id;
@@ -194,7 +193,7 @@ result_t page_group_manager_delete_group(struct page_group_manager *self,
   while (!page_id_is_null(header->next)) {
     last_page_id = header->next;
     TRY(page_manager_get_page(self->page_manager, header->next, &page));
-    CATCH(error, PROPAGATE)
+    CATCH(error, THROW(error))
 
     header = page.data;
 

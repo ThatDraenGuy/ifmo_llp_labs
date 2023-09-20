@@ -52,7 +52,7 @@ static struct cache_entry *get_least_relevant_entry(struct page_manager *self) {
 static result_t flush_entry(struct page_manager *self,
                             struct cache_entry *entry) {
   if (!entry->is_altered)
-    return OK;
+    OK;
 
   return page_resolver_write_page(self->page_resolver, entry->page_id,
                                   (page_t){entry->contents});
@@ -63,7 +63,7 @@ static result_t load_page_from_resolver(struct page_manager *self,
 
   struct cache_entry *entry = get_least_relevant_entry(self);
   TRY(flush_entry(self, entry));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   result->data = entry->contents;
   entry->relevancy_value = MOST_RELEVANT_VALUE;
@@ -92,18 +92,18 @@ result_t page_manager_create_page(struct page_manager *self, page_t *result,
 
   struct cache_entry *entry = get_least_relevant_entry(self);
   TRY(flush_entry(self, entry));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   entry->relevancy_value = MOST_RELEVANT_VALUE;
   entry->is_altered = true;
   TRY(page_resolver_get_new_page_id(self->page_resolver, &entry->page_id));
-  CATCH(error, PROPAGATE)
+  CATCH(error, THROW(error))
 
   *result_id = entry->page_id;
 
   *result = (page_t){entry->contents};
 
-  return OK;
+  OK;
 }
 
 result_t page_manager_get_page(struct page_manager *self, page_id_t page_id,
@@ -116,7 +116,7 @@ result_t page_manager_get_page(struct page_manager *self, page_id_t page_id,
     if (entry->relevancy_value.bytes != 0 &&
         entry->page_id.bytes == page_id.bytes) {
       load_page_from_cache(self, index, result);
-      return OK;
+      OK;
     }
   }
   return load_page_from_resolver(self, page_id, result);
@@ -135,14 +135,14 @@ result_t page_manager_flush(struct page_manager *self) {
     if (entry->is_altered) {
       TRY(page_resolver_write_page(self->page_resolver, entry->page_id,
                                    (page_t){entry->contents}));
-      CATCH(error, PROPAGATE)
+      CATCH(error, THROW(error))
 
       entry->relevancy_value = LEAST_RELEVANT_VALUE; // TODO think
       entry->is_altered = false;
     }
   }
 
-  return OK;
+  OK;
 }
 
 void page_manager_destroy(struct page_manager *self) {
@@ -164,5 +164,5 @@ result_t page_manager_ctor(struct page_manager *self,
 
   cache_new(self);
 
-  return OK;
+  OK;
 }
