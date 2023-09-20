@@ -17,7 +17,7 @@ static const char *const error_messages[] = {[INVALID_HEADER] =
 
 static uint32_t resolve_page_offset(struct page_resolver *self,
                                     size_t page_size, page_id_t page_id) {
-  return self->file_header.offset_to_data + page_size * page_id.bytes;
+  return self->file_header.offset_to_data + page_size * (page_id.bytes - 1);
 }
 
 static result_t write_header(struct page_resolver *self) {
@@ -32,6 +32,12 @@ size_t page_resolver_get_page_size(struct page_resolver *self) {
 
 void *page_resolver_get_application_header(struct page_resolver *self) {
   return self->application_header;
+}
+
+result_t page_resolver_flush_application_header(struct page_resolver *self) {
+  return file_manager_write(self->file_manager, self->application_header_size,
+                            sizeof(struct file_header),
+                            self->application_header);
 }
 
 result_t page_resolver_get_new_page_id(struct page_resolver *self,
@@ -62,6 +68,16 @@ result_t page_resolver_write_page(struct page_resolver *self, page_id_t page_id,
   }
   size_t page_size = page_resolver_get_page_size(self);
   uint32_t offset = resolve_page_offset(self, page_size, page_id);
+
+  // TODO remove debug
+  {
+    struct file_manager *test_file_manager = file_manager_new();
+    char str[16];
+    sprintf(str, "page%zu", page_id.bytes);
+    file_manager_ctor(test_file_manager, str);
+    file_manager_write(test_file_manager, page_size, 0, data.data);
+    file_manager_destroy(test_file_manager);
+  }
 
   return file_manager_write(self->file_manager, page_size, offset, data.data);
 }

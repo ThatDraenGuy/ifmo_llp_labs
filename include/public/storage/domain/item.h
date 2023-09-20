@@ -16,4 +16,6 @@ typedef struct {
 #define ITEM_NULL                                                              \
   (item_t) { .size = 0, .data = NULL }
 
+void item_destroy(item_t item);
+
 #endif // LLP_LAB_INCLUDE_PUBLIC_STORAGE_DOMAIN_ITEM_H

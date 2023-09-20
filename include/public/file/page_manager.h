@@ -17,6 +17,7 @@ result_t page_manager_ctor(struct page_manager *self,
                            size_t cache_size);
 
 void *page_manager_get_application_header(struct page_manager *self);
+result_t page_manager_flush_application_header(struct page_manager *self);
 
 /**
  * Creates new page and returns its id and data pointer

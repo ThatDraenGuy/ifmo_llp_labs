@@ -82,6 +82,10 @@ void *page_manager_get_application_header(struct page_manager *self) {
   return page_resolver_get_application_header(self->page_resolver);
 }
 
+result_t page_manager_flush_application_header(struct page_manager *self) {
+  return page_resolver_flush_application_header(self->page_resolver);
+}
+
 result_t page_manager_create_page(struct page_manager *self, page_t *result,
                                   page_id_t *result_id) {
   ASSERT_NOT_NULL(self, error_source);

@@ -20,8 +20,17 @@ struct page_data_manager *page_data_manager_new();
 result_t page_data_manager_ctor(struct page_data_manager *self,
                                 char *file_name);
 
+page_group_id_t
+page_data_manager_get_meta_group_id(struct page_data_manager *self);
+
+result_t page_data_manager_set_meta_group_id(struct page_data_manager *self,
+                                             page_group_id_t page_group_id);
+
 result_t page_data_manager_create_group(struct page_data_manager *self,
                                         page_group_id_t *result);
+
+result_t page_data_manager_delete_group(struct page_data_manager *self,
+                                        page_group_id_t page_group_id);
 
 result_t page_data_manager_insert(struct page_data_manager *self,
                                   page_group_id_t page_group_id, item_t item);

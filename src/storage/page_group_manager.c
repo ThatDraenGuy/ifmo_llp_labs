@@ -113,6 +113,21 @@ result_t page_group_manager_ctor(struct page_group_manager *self,
   return OK;
 }
 
+page_group_id_t
+page_group_manager_get_meta_group_id(struct page_group_manager *self) {
+  struct application_header *header =
+      page_manager_get_application_header(self->page_manager);
+  return (page_group_id_t){header->meta_page.bytes};
+}
+
+result_t page_group_manager_set_meta_group_id(struct page_group_manager *self,
+                                              page_group_id_t page_group_id) {
+  struct application_header *header =
+      page_manager_get_application_header(self->page_manager);
+  header->meta_page = (page_id_t){page_group_id.bytes};
+  return page_manager_flush_application_header(self->page_manager);
+}
+
 result_t page_group_manager_add_page(struct page_group_manager *self,
                                      struct page_iterator *it, page_t *result) {
   ASSERT_NOT_NULL(self, error_source);
@@ -144,6 +159,49 @@ result_t page_group_manager_create_group(struct page_group_manager *self,
 
   *result = (page_group_id_t){new_page_id.bytes};
   return OK;
+}
+
+result_t page_group_manager_delete_group(struct page_group_manager *self,
+                                         page_group_id_t page_group_id) {
+  ASSERT_NOT_NULL(self, error_source);
+  page_id_t to_be_freed_page_id = (page_id_t){page_group_id.bytes};
+
+  struct application_header *application_header =
+      page_manager_get_application_header(self->page_manager);
+
+  page_t page = PAGE_NULL;
+  struct page_header *header = NULL;
+  if (page_id_is_null(application_header->last_free_page)) {
+    // initialize first_free_page and setup page & header to find last_free_page
+    application_header->first_free_page = to_be_freed_page_id;
+
+    TRY(page_manager_get_page(self->page_manager, to_be_freed_page_id, &page));
+    CATCH(error, PROPAGATE)
+
+    header = page.data;
+  } else {
+    // update next page in free page chain
+    TRY(page_manager_get_page(self->page_manager,
+                              application_header->last_free_page, &page));
+    CATCH(error, PROPAGATE)
+
+    header = page.data;
+    header->next = to_be_freed_page_id;
+  }
+
+  // update last_free_page field
+  page_id_t last_page_id = to_be_freed_page_id;
+  while (!page_id_is_null(header->next)) {
+    last_page_id = header->next;
+    TRY(page_manager_get_page(self->page_manager, header->next, &page));
+    CATCH(error, PROPAGATE)
+
+    header = page.data;
+
+    application_header->last_free_page = last_page_id;
+  }
+
+  return page_manager_flush_application_header(self->page_manager);
 }
 
 size_t page_group_manager_get_page_capacity(struct page_group_manager *self) {

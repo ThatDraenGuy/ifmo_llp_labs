@@ -18,6 +18,7 @@ result_t page_resolver_ctor(struct page_resolver *self, char *file_name,
 
 size_t page_resolver_get_page_size(struct page_resolver *self);
 void *page_resolver_get_application_header(struct page_resolver *self);
+result_t page_resolver_flush_application_header(struct page_resolver *self);
 result_t page_resolver_get_new_page_id(struct page_resolver *self,
                                        page_id_t *result_id);
 result_t page_resolver_read_page(struct page_resolver *self, page_id_t page_id, page_t destination);

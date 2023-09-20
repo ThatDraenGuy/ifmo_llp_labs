@@ -192,6 +192,17 @@ result_t page_data_manager_ctor(struct page_data_manager *self,
   return OK;
 }
 
+page_group_id_t
+page_data_manager_get_meta_group_id(struct page_data_manager *self) {
+  return page_group_manager_get_meta_group_id(self->page_group_manager);
+}
+
+result_t page_data_manager_set_meta_group_id(struct page_data_manager *self,
+                                             page_group_id_t page_group_id) {
+  return page_group_manager_set_meta_group_id(self->page_group_manager,
+                                              page_group_id);
+}
+
 result_t page_data_manager_create_group(struct page_data_manager *self,
                                         page_group_id_t *result) {
   ASSERT_NOT_NULL(self, error_source);
@@ -215,6 +226,13 @@ result_t page_data_manager_create_group(struct page_data_manager *self,
   }
   page_iterator_destroy(page_it);
   return OK;
+}
+
+result_t page_data_manager_delete_group(struct page_data_manager *self,
+                                        page_group_id_t page_group_id) {
+  ASSERT_NOT_NULL(self, error_source);
+  return page_group_manager_delete_group(self->page_group_manager,
+                                         page_group_id);
 }
 
 result_t page_data_manager_insert(struct page_data_manager *self,

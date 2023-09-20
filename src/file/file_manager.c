@@ -64,8 +64,6 @@ result_t file_manager_write(struct file_manager *self, size_t size,
   if (fseek(self->file, offset, SEEK_SET) != 0)
     return result_err(error_self());
 
-  { fwrite(data, size, 1, fopen("test2", "w")); }
-
   if (fwrite(data, size, 1, self->file) == 0)
     return result_err(error_self()); // TODO think
   return OK;
