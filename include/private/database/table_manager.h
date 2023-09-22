@@ -21,6 +21,7 @@
 struct meta_contents {
   page_group_id_t table_data_table_page_group_id;
   page_group_id_t table_columns_table_page_group_id;
+  uint64_t next_table_id;
 };
 
 struct table_manager {

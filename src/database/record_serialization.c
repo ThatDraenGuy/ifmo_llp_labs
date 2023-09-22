@@ -9,10 +9,9 @@
 
 static const char *const error_source = "RECORD_SERIALIZATION";
 static const char *const error_type = "RECORD_SERIALIZATION_ERROR";
-enum error_code { INCORRECT_RECORD_SIZE, INCORRECT_ITEM_SIZE, INVALID_DATA };
+enum error_code { INCORRECT_ITEM_SIZE, INVALID_DATA };
 
 static const char *const error_messages[] = {
-    [INCORRECT_RECORD_SIZE] = "Record is too small!",
     [INCORRECT_ITEM_SIZE] = "Item is too small!",
     [INVALID_DATA] = "Item data is invalid!"};
 
@@ -109,6 +108,7 @@ static result_t deserialize_column(item_t item, size_t *item_offset,
       free(value);
       THROW(error);
     })
+    free(value);
     break;
   }
   case COLUMN_TYPE_BOOL: {
@@ -128,10 +128,6 @@ static result_t deserialize_column(item_t item, size_t *item_offset,
 result_t record_deserialize(item_t item, struct table_schema *schema,
                             struct record *target) {
   ASSERT_NOT_NULL(target, error_source);
-
-  if (target->column_amount - target->current_entry_index <
-      table_schema_get_column_amount(schema))
-    THROW(error_self(INCORRECT_RECORD_SIZE));
 
   size_t current_item_offset = 0;
   struct column_schema_iterator *it = table_schema_get_columns(schema);
@@ -223,23 +219,29 @@ static void serialize_column(item_t item, size_t *item_offset,
 
 item_t record_serialize(struct record *record) {
   size_t item_size = 0;
-  for (size_t index = 0; index < record->current_entry_index; index++) {
-    column_value_t column_value = {0};
-    column_type_t column_type = {0};
-    record_get_value_at(record, index, &column_value, &column_type);
+  struct queue_iterator *it = queue_get_entries(record->entries);
+  while (queue_iterator_has_next(it)) {
+    struct record_entry *entry = NULL;
+    queue_iterator_next(it, (void **)&entry);
+    column_value_t column_value = entry->value;
+    column_type_t column_type = entry->schema.type;
     calculate_column_size(column_value, column_type, &item_size);
   }
+  queue_iterator_destroy(it);
 
   void *item_data = malloc(item_size);
   item_t item = (item_t){.size = item_size, .data = item_data};
 
   size_t item_offset = 0;
-  for (size_t index = 0; index < record->current_entry_index; index++) {
-    column_value_t column_value = {0};
-    column_type_t column_type = {0};
-    record_get_value_at(record, index, &column_value, &column_type);
+  it = queue_get_entries(record->entries);
+  while (queue_iterator_has_next(it)) {
+    struct record_entry *entry = NULL;
+    queue_iterator_next(it, (void **)&entry);
+    column_value_t column_value = entry->value;
+    column_type_t column_type = entry->schema.type;
     serialize_column(item, &item_offset, column_type, column_value);
   }
+  queue_iterator_destroy(it);
 
   return item;
 }

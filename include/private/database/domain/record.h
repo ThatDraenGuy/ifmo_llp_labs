@@ -8,6 +8,7 @@
 #include "private/database/domain/schema.h"
 #include "public/database/domain/record.h"
 #include "public/storage/domain/page_group.h"
+#include "public/util/queue.h"
 #include "schema.h"
 
 struct record_entry {
@@ -16,13 +17,11 @@ struct record_entry {
 };
 
 struct record {
-  size_t column_amount;
-  size_t current_entry_index;
-  struct record_entry *entries;
+  struct queue *entries;
 };
 
 struct record *record_new();
-void record_ctor(struct record *self, size_t column_amount);
+void record_ctor(struct record *self);
 result_t record_copy_into(struct record *self, struct record *target);
 void record_clear(struct record *self);
 

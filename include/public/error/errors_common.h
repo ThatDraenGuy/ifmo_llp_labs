@@ -13,7 +13,8 @@
 
 typedef enum {
   ERR_COMMON_NULL_POINTER = 0,
-  ERR_COMMON_ITER_OUT_OF_RANGE
+  ERR_COMMON_ITER_OUT_OF_RANGE,
+  ERR_INDEX_OUT_OF_BOUNDS
 } common_error_code_t;
 
 extern const char *const common_error_type;
