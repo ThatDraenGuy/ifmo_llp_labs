@@ -5,6 +5,10 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_RECORD_ITERATOR_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_RECORD_ITERATOR_H
 
+#include "public/util/result.h"
+#include "record.h"
+#include <stdbool.h>
+
 struct record_iterator;
 
 bool record_iterator_has_next(struct record_iterator *self);

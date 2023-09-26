@@ -7,8 +7,8 @@
 #include <malloc.h>
 #include <memory.h>
 
-static const char *const error_source = "RECORD_SERIALIZATION";
-static const char *const error_type = "RECORD_SERIALIZATION_ERROR";
+#define ERROR_SOURCE "RECORD_SERIALIZATION"
+#define ERROR_TYPE "RECORD_SERIALIZATION_ERROR"
 enum error_code { INCORRECT_ITEM_SIZE, INVALID_DATA };
 
 static const char *const error_messages[] = {
@@ -16,7 +16,7 @@ static const char *const error_messages[] = {
     [INVALID_DATA] = "Item data is invalid!"};
 
 static struct error *error_self(enum error_code error_code) {
-  return error_new(error_source, error_type, (error_code_t){error_code},
+  return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},
                    error_messages[error_code]);
 }
 
@@ -127,7 +127,7 @@ static result_t deserialize_column(item_t item, size_t *item_offset,
 
 result_t record_deserialize(item_t item, struct table_schema *schema,
                             struct record *target) {
-  ASSERT_NOT_NULL(target, error_source);
+  ASSERT_NOT_NULL(target, ERROR_SOURCE);
 
   size_t current_item_offset = 0;
   struct column_schema_iterator *it = table_schema_get_columns(schema);

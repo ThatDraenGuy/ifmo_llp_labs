@@ -8,30 +8,28 @@
 #include "public/file/page_resolver.h"
 #include <malloc.h>
 
-static const char *const error_source = "PAGE_GROUP_MANAGER";
-static const char *const iterator_error_source = "PAGE_ITERATOR";
+#define ERROR_SOURCE "PAGE_GROUP_MANAGER"
+#define ITERATOR_ERROR_SOURCE "PAGE_ITERATOR"
 
 bool page_iterator_has_next(struct page_iterator *self) {
   return !page_id_is_null(self->next_page_id);
-
-  //  struct page_data_header *page_data_header = self->current_page.data;
-  //  return page_id_is_null(page_data_header->next);
 }
 
 result_t page_iterator_next(struct page_iterator *self, page_t *result) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   if (!page_iterator_has_next(self))
-    THROW(error_common(iterator_error_source, ERR_COMMON_ITER_OUT_OF_RANGE));
+    THROW(error_common(ITERATOR_ERROR_SOURCE, ERR_COMMON_ITER_OUT_OF_RANGE));
 
-  TRY(page_manager_get_page(self->page_manager, self->next_page_id,
-                            &self->current_page));
+  page_t page = PAGE_NULL;
+  TRY(page_manager_get_page(self->page_manager, self->next_page_id, &page));
   CATCH(error, THROW(error))
 
   // skip page_header for the resulting page
-  result->data = self->current_page.data + sizeof(struct page_header);
+  result->data = page.data + sizeof(struct page_header);
 
-  struct page_header *page_header = self->current_page.data;
+  struct page_header *page_header = page.data;
+  self->current_page_id = self->next_page_id;
   self->next_page_id = page_header->next;
   OK;
 }
@@ -43,12 +41,8 @@ page_iterator_new(struct page_manager *page_manager,
                   page_group_id_t page_group_id) {
   struct page_iterator *it = malloc(sizeof(struct page_iterator));
   it->page_manager = page_manager;
-  it->current_page = PAGE_NULL;
+  it->current_page_id = PAGE_ID_NULL;
   it->next_page_id = (page_id_t){page_group_id.bytes};
-
-  //  page_manager_get_page(page_manager, (page_id_t){page_group_id.bytes},
-  //                        &it->current_page);
-
   return it;
 }
 
@@ -82,7 +76,7 @@ struct page_group_manager *page_group_manager_new() {
 
 result_t page_group_manager_ctor(struct page_group_manager *self,
                                  char *file_name) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   struct application_header *default_header =
       malloc(sizeof(struct application_header));
@@ -129,13 +123,17 @@ result_t page_group_manager_set_meta_group_id(struct page_group_manager *self,
 
 result_t page_group_manager_add_page(struct page_group_manager *self,
                                      struct page_iterator *it, page_t *result) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   page_id_t page_id = PAGE_ID_NULL;
   TRY(create_page(self, result, &page_id));
   CATCH(error, THROW(error))
 
-  struct page_header *page_header = it->current_page.data;
+  page_t page = PAGE_NULL;
+  TRY(page_manager_get_page(self->page_manager, it->current_page_id, &page));
+  CATCH(error, THROW(error))
+
+  struct page_header *page_header = page.data;
   struct page_header *new_page_header = result->data;
   if (page_iterator_has_next(it)) {
     new_page_header->next = page_header->next;
@@ -149,7 +147,7 @@ result_t page_group_manager_add_page(struct page_group_manager *self,
 
 result_t page_group_manager_create_group(struct page_group_manager *self,
                                          page_group_id_t *result) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   page_t new_page = PAGE_NULL;
   page_id_t new_page_id = PAGE_ID_NULL;
@@ -162,7 +160,7 @@ result_t page_group_manager_create_group(struct page_group_manager *self,
 
 result_t page_group_manager_delete_group(struct page_group_manager *self,
                                          page_group_id_t page_group_id) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
   page_id_t to_be_freed_page_id = (page_id_t){page_group_id.bytes};
 
   struct application_header *application_header =
@@ -209,7 +207,7 @@ size_t page_group_manager_get_page_capacity(struct page_group_manager *self) {
 }
 
 result_t page_group_manager_flush(struct page_group_manager *self) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
   return page_manager_flush(self->page_manager);
 }
 void page_group_manager_destroy(struct page_group_manager *self) {

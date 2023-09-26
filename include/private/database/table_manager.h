@@ -32,7 +32,7 @@ struct table_manager {
 
 struct record_iterator {
   struct item_iterator *item_it;
-  struct table_schema *table_schema;
+  struct table *table;
   struct predicate *predicate;
   struct record *current_record;
   struct record *next_record;

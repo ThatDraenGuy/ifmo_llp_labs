@@ -23,8 +23,8 @@ struct __attribute__((packed)) page_header {
 
 struct page_iterator {
   struct page_manager *page_manager;
+  page_id_t current_page_id;
   page_id_t next_page_id;
-  page_t current_page;
 };
 
 struct page_group_manager {

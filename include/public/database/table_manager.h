@@ -19,8 +19,7 @@ struct table_manager *table_manager_new();
 result_t table_manager_ctor(struct table_manager *self, char *file_name);
 
 result_t table_manager_create_table(struct table_manager *self,
-                                    struct table_schema *schema,
-                                    struct table **result);
+                                    struct table_schema *schema);
 
 result_t table_manager_get_table(struct table_manager *self, char *table_name,
                                  struct table **result);

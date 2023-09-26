@@ -10,11 +10,11 @@
 #include <string.h>
 #include <unistd.h>
 
-static const char *const error_source = "FILE_MANAGER";
-static const char *const error_type = "FILE_MANAGER_ERROR";
+#define ERROR_SOURCE "FILE_MANAGER"
+#define ERROR_TYPE "FILE_MANAGER_ERROR"
 
 static struct error *error_self() {
-  return error_new(error_source, error_type, (error_code_t){errno},
+  return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){errno},
                    strerror(errno));
 }
 
@@ -23,7 +23,7 @@ struct file_manager *file_manager_new() {
 }
 
 result_t file_manager_ctor(struct file_manager *self, char *file_name) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
   bool file_exists = access(file_name, F_OK) == 0;
   if (!file_exists) {
     // TODO think
@@ -48,7 +48,7 @@ bool file_manager_is_file_new(struct file_manager *self) {
 
 result_t file_manager_read(struct file_manager *self, size_t size,
                            uint32_t offset, void *data) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
   if (fseek(self->file, offset, SEEK_SET) != 0) {
     THROW(error_self());
   }
@@ -60,7 +60,7 @@ result_t file_manager_read(struct file_manager *self, size_t size,
 
 result_t file_manager_write(struct file_manager *self, size_t size,
                             uint32_t offset, void *data) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
   if (fseek(self->file, offset, SEEK_SET) != 0)
     THROW(error_self());
 

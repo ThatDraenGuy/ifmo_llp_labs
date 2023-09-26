@@ -10,22 +10,24 @@
 #include <malloc.h>
 #include <memory.h>
 
-static const char *const error_source = "TABLE_MANAGER";
-static const char *const error_type = "TABLE_MANAGER_ERROR";
+#define ERROR_SOURCE "TABLE_MANAGER"
+#define ERROR_TYPE "TABLE_MANAGER_ERROR"
 
 enum error_code {
   META_PAGE_CONTENTS_MISSING,
   META_PAGE_CONTENTS_INVALID,
-  NO_RECORD_FOUND
+  NO_RECORD_FOUND,
+  TABLE_ALREADY_EXISTS
 };
 
 static const char *const error_messages[] = {
     [META_PAGE_CONTENTS_MISSING] = "Meta information is missing!",
     [META_PAGE_CONTENTS_INVALID] = "Meta information is invalid!",
-    [NO_RECORD_FOUND] = "No applicable record was found!"};
+    [NO_RECORD_FOUND] = "No applicable record was found!",
+    [TABLE_ALREADY_EXISTS] = "table with this name already exists!"};
 
 static struct error *error_self(enum error_code error_code) {
-  return error_new(error_source, error_type, (error_code_t){error_code},
+  return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},
                    error_messages[error_code]);
 }
 
@@ -94,6 +96,7 @@ static result_t get_next_table_id(struct table_manager *self,
       page_data_manager_get_items(self->page_data_manager, meta_group);
 
   if (!item_iterator_has_next(it)) {
+    item_iterator_destroy(it);
     THROW(error_self(META_PAGE_CONTENTS_MISSING));
   }
 
@@ -147,7 +150,7 @@ static void initialize_meta_tables(struct table_manager *self,
 }
 
 result_t table_manager_ctor(struct table_manager *self, char *file_name) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   struct page_data_manager *page_data_manager = page_data_manager_new();
 
@@ -190,7 +193,7 @@ static result_t find_first_maybe_delete(struct table_manager *self,
                                         struct predicate *predicate,
                                         bool do_delete,
                                         struct record **result) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   struct item_iterator *it = page_data_manager_get_items(
       self->page_data_manager, table->page_group_id);
@@ -202,6 +205,7 @@ static result_t find_first_maybe_delete(struct table_manager *self,
     TRY(item_iterator_next(it, &item));
     CATCH(error, {
       item_iterator_destroy(it);
+      record_destroy(record);
       THROW(error);
     })
 
@@ -229,6 +233,7 @@ static result_t find_first_maybe_delete(struct table_manager *self,
   }
 
   item_iterator_destroy(it);
+  record_destroy(record);
   THROW(error_self(NO_RECORD_FOUND));
 }
 
@@ -246,7 +251,9 @@ bool record_iterator_has_next(struct record_iterator *self) {
 result_t record_iterator_next(struct record_iterator *self,
                               struct record **result) {
   record_clear(self->current_record);
-  record_copy_into(self->next_record, self->current_record);
+  TRY(record_copy_into(self->next_record, self->current_record));
+  CATCH(error, THROW(error))
+
   *result = self->current_record;
 
   // try to find next applicable item
@@ -257,7 +264,8 @@ result_t record_iterator_next(struct record_iterator *self,
     TRY(item_iterator_next(self->item_it, &new_item));
     CATCH(error, THROW(error))
 
-    TRY(record_deserialize(new_item, self->table_schema, self->next_record));
+    TRY(record_deserialize(new_item, self->table->table_schema,
+                           self->next_record));
     CATCH(error, THROW(error))
 
     bool predicate_res = false;
@@ -282,15 +290,16 @@ void record_iterator_destroy(struct record_iterator *self) {
 result_t table_manager_find(struct table_manager *self, struct table *table,
                             struct predicate *predicate,
                             struct record_iterator **result) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   struct item_iterator *item_it = page_data_manager_get_items(
       self->page_data_manager, table->page_group_id);
 
   *result = malloc(sizeof(struct record_iterator));
-  (*result)->table_schema = table->table_schema;
+  (*result)->table = table;
   (*result)->item_it = item_it;
   (*result)->predicate = predicate;
+  (*result)->is_empty = false;
 
   (*result)->current_record = record_new();
   record_ctor((*result)->current_record);
@@ -310,7 +319,7 @@ result_t table_manager_find(struct table_manager *self, struct table *table,
 
 result_t table_manager_insert(struct table_manager *self, struct table *table,
                               struct record *record) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   item_t item = record_serialize(record);
 
@@ -327,7 +336,7 @@ result_t table_manager_insert(struct table_manager *self, struct table *table,
 
 result_t table_manager_delete(struct table_manager *self, struct table *table,
                               struct predicate *predicate) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   struct item_iterator *it = page_data_manager_get_items(
       self->page_data_manager, table->page_group_id);
@@ -367,27 +376,55 @@ result_t table_manager_delete(struct table_manager *self, struct table *table,
 }
 
 result_t table_manager_create_table(struct table_manager *self,
-                                    struct table_schema *schema,
-                                    struct table **result) {
-  ASSERT_NOT_NULL(self, error_source);
+                                    struct table_schema *schema) {
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
+  // try to find a table with requested name
+  struct predicate *table_name_equal = predicate_of(
+      column_value(TABLE_DATA_TABLE_COLUMN_TABLE_NAME, COLUMN_TYPE_STRING),
+      literal(schema->table_name), EQ);
+
+  struct record *existing_table_data_record = NULL;
+  TRY(find_first_maybe_delete(self, self->table_data_table, table_name_equal,
+                              false, &existing_table_data_record));
+  CATCH(error, {
+    // if we encounter any error but NO_RECORD_FOUND, propagate it
+    // otherwise everything is good
+    if (!(strcmp(error_get_type(error), ERROR_TYPE) == 0 &&
+          error_get_code(error).bytes == NO_RECORD_FOUND)) {
+      predicate_destroy(table_name_equal);
+      THROW(error);
+    }
+    error_destroy(error);
+  })
+  predicate_destroy(table_name_equal);
+
+  // if a table with the same name already exists throw error
+  if (existing_table_data_record != NULL) {
+    record_destroy(existing_table_data_record);
+    THROW(error_self(TABLE_ALREADY_EXISTS));
+  }
+
+  // create page group for the page
   page_group_id_t table_group = PAGE_GROUP_ID_NULL;
   TRY(page_data_manager_create_group(self->page_data_manager, &table_group));
   CATCH(error, THROW(error))
 
+  // get table id
   uint64_t table_id = 0;
   TRY(get_next_table_id(self, &table_id));
   CATCH(error, THROW(error))
 
+  // construct the table record
   struct record *table_data_record = record_new();
   record_ctor(table_data_record);
-
   record_insert(table_data_record, TABLE_DATA_TABLE_COLUMN_TABLE_ID, table_id);
   record_insert(table_data_record, TABLE_DATA_TABLE_COLUMN_TABLE_NAME,
                 table_schema_get_name(schema));
   record_insert(table_data_record, TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID,
                 table_group.bytes);
 
+  // save table record to the tables table
   TRY(table_manager_insert(self, self->table_data_table, table_data_record));
   CATCH(error, {
     record_destroy(table_data_record);
@@ -395,8 +432,10 @@ result_t table_manager_create_table(struct table_manager *self,
   })
   record_destroy(table_data_record);
 
+  // create a record for all columns of the table
   struct column_schema_iterator *column_it = table_schema_get_columns(schema);
   while (column_schema_iterator_has_next(column_it)) {
+    // get next column schema
     struct column_schema *column_schema = NULL;
     TRY(column_schema_iterator_next(column_it, &column_schema));
     CATCH(error, {
@@ -404,15 +443,16 @@ result_t table_manager_create_table(struct table_manager *self,
       THROW(error);
     })
 
+    // construct column record
     struct record *column_record = record_new();
     record_ctor(column_record);
-
     record_insert(column_record, TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID, table_id);
     record_insert(column_record, TABLE_COLUMNS_TABLE_COLUMN_NAME,
                   column_schema->name);
     record_insert(column_record, TABLE_COLUMNS_TABLE_COLUMN_TYPE,
                   (uint64_t)column_schema->type);
 
+    // save it to columns table
     TRY(table_manager_insert(self, self->table_columns_table, column_record));
     CATCH(error, {
       column_schema_iterator_destroy(column_it);
@@ -423,15 +463,12 @@ result_t table_manager_create_table(struct table_manager *self,
   }
   column_schema_iterator_destroy(column_it);
 
-  (*result) = table_new();
-  table_ctor((*result), schema, table_group);
-
   OK;
 }
 
 result_t table_manager_get_table(struct table_manager *self, char *table_name,
                                  struct table **result) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   // predicate to find table by name
   struct predicate *table_name_equal = predicate_of(
@@ -482,9 +519,9 @@ result_t table_manager_get_table(struct table_manager *self, char *table_name,
   // start constructing table schema
   struct table_schema *schema = table_schema_new();
   table_schema_ctor(schema, table_name, 10); // TODO fix this
+  struct record *column_record = NULL;
   while (record_iterator_has_next(columns_it)) {
     // get column record
-    struct record *column_record = NULL;
     TRY(record_iterator_next(columns_it, &column_record));
     CATCH(error, {
       record_iterator_destroy(columns_it);
@@ -528,7 +565,7 @@ result_t table_manager_get_table(struct table_manager *self, char *table_name,
 
 result_t table_manager_drop_table(struct table_manager *self,
                                   char *table_name) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   struct predicate *table_name_equal = predicate_of(
       column_value(TABLE_DATA_TABLE_COLUMN_TABLE_NAME, COLUMN_TYPE_STRING),

@@ -7,8 +7,8 @@
 #include <malloc.h>
 #include <string.h>
 
-static const char *const error_source = "RECORD";
-static const char *const error_type = "RECORD_ERROR";
+#define ERROR_SOURCE "RECORD"
+#define ERROR_TYPE "RECORD_ERROR"
 
 enum error_code {
   INCORRECT_COLUMN_TYPE,
@@ -20,7 +20,7 @@ static const char *const error_messages[] = {
     [UNKNOWN_COLUMN_NAME] = "Unknown column name!"};
 
 static struct error *error_self(enum error_code error_code) {
-  return error_new(error_source, error_type, (error_code_t){error_code},
+  return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},
                    error_messages[error_code]);
 }
 
@@ -48,7 +48,7 @@ void record_clear(struct record *self) {
 
 result_t record_insert_value(struct record *self, char *column_name,
                              column_value_t value, column_type_t type) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
   struct record_entry *new_entry = queue_push_back(self->entries, NULL);
   new_entry->schema.name = column_name;
   new_entry->schema.type = type;
@@ -93,12 +93,12 @@ result_t record_insert_bool(struct record *self, char *column_name,
 
 static result_t get_entry_at(struct record *self, size_t column_index,
                              struct record_entry **result) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
   return queue_get(self->entries, column_index, (void **)result);
 }
 
 result_t record_copy_into(struct record *self, struct record *target) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
   struct queue_iterator *it = queue_get_entries(self->entries);
   while (queue_iterator_has_next(it)) {
     struct record_entry *entry = NULL;
@@ -108,12 +108,21 @@ result_t record_copy_into(struct record *self, struct record *target) {
       THROW(error);
     })
 
-    TRY(record_insert_value(target, entry->schema.name, entry->value,
-                            entry->schema.type));
-    CATCH(error, {
-      queue_iterator_destroy(it);
-      THROW(error);
-    })
+    if (entry->schema.type == COLUMN_TYPE_STRING) {
+      TRY(record_insert_string(target, entry->schema.name,
+                               entry->value.string_value));
+      CATCH(error, {
+        queue_iterator_destroy(it);
+        THROW(error);
+      })
+    } else {
+      TRY(record_insert_value(target, entry->schema.name, entry->value,
+                              entry->schema.type));
+      CATCH(error, {
+        queue_iterator_destroy(it);
+        THROW(error);
+      })
+    }
   }
   queue_iterator_destroy(it);
   OK;
@@ -134,7 +143,7 @@ result_t record_get_value_at(struct record *self, size_t column_index,
 #define RECORD_GET_AT_IMPL(Type, TypeName, ColumnTypeValue)                    \
   result_t record_get_##TypeName##_at(struct record *self,                     \
                                       size_t column_index, Type *result) {     \
-    ASSERT_NOT_NULL(self, error_source);                                       \
+    ASSERT_NOT_NULL(self, ERROR_SOURCE);                                       \
                                                                                \
     struct record_entry *entry = NULL;                                         \
     TRY(get_entry_at(self, column_index, &entry));                             \
@@ -171,7 +180,7 @@ static struct record_entry *find_entry(struct record *self, char *column_name) {
 
 result_t record_get_value(struct record *self, char *column_name,
                           column_value_t *result) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   struct record_entry *entry = find_entry(self, column_name);
   if (entry == NULL)
@@ -184,7 +193,7 @@ result_t record_get_value(struct record *self, char *column_name,
 #define RECORD_GET_IMPL(Type, TypeName, ColumnTypeValue)                       \
   result_t record_get_##TypeName(struct record *self, char *column_name,       \
                                  Type *result) {                               \
-    ASSERT_NOT_NULL(self, error_source);                                       \
+    ASSERT_NOT_NULL(self, ERROR_SOURCE);                                       \
                                                                                \
     struct record_entry *entry = find_entry(self, column_name);                \
     if (entry == NULL)                                                         \

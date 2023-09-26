@@ -1,78 +1,120 @@
-#include <malloc.h>
+#include "public/prelude.h"
 #include <stdio.h>
 
-#include "private/database/domain/table.h"
-#include "private/error/error.h"
-#include "public/database/table_manager.h"
-
-static void handle_error(struct error *err) {
-  printf("Encountered error at %s:\n %s(%zu): %s", err->error_source,
-         err->error_type, err->error_code.bytes, err->error_message);
-  error_destroy(err);
-}
-
-int create_table() {
-  struct table_manager *table_manager = table_manager_new();
-  TRY(table_manager_ctor(table_manager, "test_file"));
+int create_and_insert() {
+  struct database_manager *database_manager = database_manager_new();
+  TRY(database_manager_ctor(database_manager, "test_file"));
   CATCH(error, {
     handle_error(error);
-    return 0;
+    return 1;
   })
+
   struct table_schema *schema = table_schema_new();
   table_schema_ctor(schema, "TEST_TABLE", 3);
   table_schema_add_column(schema, "TEST_INT", COLUMN_TYPE_INT32);
   table_schema_add_column(schema, "TEST_BOOL", COLUMN_TYPE_BOOL);
   table_schema_add_column(schema, "TEST_FLOAT", COLUMN_TYPE_FLOAT);
 
-  struct table *test_table = NULL;
-  TRY(table_manager_create_table(table_manager, schema, &test_table));
+  struct i_statement *create_table =
+      create_table_statement_ctor(create_table_statement_new(), schema);
+
+  struct statement_result *create_table_result = statement_result_new();
+  TRY(database_manager_execute_statement(database_manager, create_table,
+                                         create_table_result));
   CATCH(error, {
-    table_manager_destroy(table_manager);
+    database_manager_destroy(database_manager);
+    statement_destroy(create_table);
+    statement_result_destroy(create_table_result);
     handle_error(error);
-    return 0;
+    return 1;
   })
+  statement_destroy(create_table);
+  statement_result_destroy(create_table_result);
 
-  printf("%zu\n", test_table->page_group_id.bytes);
+  struct record *record = record_new();
+  record_ctor(record);
+  struct i_statement *insert =
+      insert_statement_ctor(insert_statement_new(), "TEST_TABLE", record);
+  struct statement_result *insert_result = statement_result_new();
 
-  TRY(table_manager_flush(table_manager, test_table));
-  CATCH(error, {
-    table_manager_destroy(table_manager);
-    table_destroy(test_table);
-    handle_error(error);
-    return 0;
-  })
+  for (int32_t i = 0; i < 10; i++) {
+    float val = (float)i / 0.17f;
+    record_insert(record, "TEST_INT", i);
+    record_insert(record, "TEST_BOOL", (bool)(i % 3 == 0));
+    record_insert(record, "TEST_FLOAT", val);
 
-  table_manager_destroy(table_manager);
-  table_destroy(test_table);
-  return 0;
-}
+    TRY(database_manager_execute_statement(database_manager, insert,
+                                           insert_result));
+    CATCH(error, {
+      database_manager_destroy(database_manager);
+      statement_destroy(insert);
+      statement_result_destroy(insert_result);
+      handle_error(error);
+      return 1;
+    })
 
-int read_table() {
-  struct table_manager *table_manager = table_manager_new();
-  TRY(table_manager_ctor(table_manager, "test_file"));
-  CATCH(error, {
-    handle_error(error);
-    return 0;
-  })
+    record_clear(record);
+    statement_result_clear(insert_result);
+  }
+  statement_destroy(insert);
+  statement_result_destroy(insert_result);
+  database_manager_destroy(database_manager);
 
-  struct table *test_table = NULL;
-  TRY(table_manager_get_table(table_manager, "TEST_TABLE", &test_table));
-  CATCH(error, {
-    table_manager_destroy(table_manager);
-    handle_error(error);
-    return 0;
-  })
-
-  printf("%zu\n", test_table->page_group_id.bytes);
-
-  table_manager_destroy(table_manager);
-  table_destroy(test_table);
-  return 0;
-}
-
-int main() {
-
-  int res = create_table();
   printf("done");
-  return res;
+  return 0;
 }
+
+int query() {
+  struct database_manager *database_manager = database_manager_new();
+  TRY(database_manager_ctor(database_manager, "test_file"));
+  CATCH(error, {
+    handle_error(error);
+    return 1;
+  })
+
+  struct predicate *predicate = predicate_of(
+      column_value("TEST_BOOL", COLUMN_TYPE_BOOL), literal((bool)true), EQ);
+  struct i_statement *query =
+      query_statement_ctor(query_statement_new(), "TEST_TABLE", predicate);
+  struct statement_result *query_result = statement_result_new();
+
+  TRY(database_manager_execute_statement(database_manager, query,
+                                         query_result));
+  CATCH(error, {
+    database_manager_destroy(database_manager);
+    statement_destroy(query);
+    statement_result_destroy(query_result);
+    handle_error(error);
+    return 1;
+  })
+
+  struct record_iterator *it = statement_result_records(query_result);
+  statement_destroy(query);
+
+  struct record *record = NULL;
+  while (record_iterator_has_next(it)) {
+    TRY(record_iterator_next(it, &record));
+    CATCH(error, {
+      database_manager_destroy(database_manager);
+      statement_result_destroy(query_result);
+      handle_error(error);
+      return 1;
+    })
+
+    TRY(record_print(record));
+    CATCH(error, {
+      database_manager_destroy(database_manager);
+      statement_result_destroy(query_result);
+      handle_error(error);
+      return 1;
+    })
+  }
+
+  statement_result_destroy(query_result);
+  database_manager_destroy(database_manager);
+
+  printf("done");
+  return 0;
+}
+
+int main() { return create_and_insert(); }

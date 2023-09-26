@@ -6,7 +6,7 @@
 #include <malloc.h>
 #include <memory.h>
 
-static const char *const error_source = "QUEUE";
+#define ERROR_SOURCE "QUEUE"
 
 struct queue *queue_new() { return malloc(sizeof(struct queue)); }
 
@@ -74,7 +74,7 @@ void *queue_push_back(struct queue *self, void *entry) {
 
 result_t queue_get(struct queue *self, size_t index, void **entry) {
   if (self->size <= index)
-    THROW(error_common(error_source, ERR_INDEX_OUT_OF_BOUNDS));
+    THROW(error_common(ERROR_SOURCE, ERR_INDEX_OUT_OF_BOUNDS));
 
   size_t node_index = index / self->node_entries_amount;
   size_t entry_index = index % self->node_entries_amount;
@@ -122,9 +122,9 @@ bool queue_iterator_has_next(struct queue_iterator *self) {
 }
 
 result_t queue_iterator_next(struct queue_iterator *self, void **entry) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
   if (!queue_iterator_has_next(self))
-    THROW(error_common(error_source, ERR_COMMON_ITER_OUT_OF_RANGE));
+    THROW(error_common(ERROR_SOURCE, ERR_COMMON_ITER_OUT_OF_RANGE));
 
   if (self->next_index >= self->current_node->current_entries_amount) {
     self->current_node = self->current_node->next;

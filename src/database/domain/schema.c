@@ -7,15 +7,15 @@
 #include <malloc.h>
 #include <string.h>
 
-static const char *const error_source = "SCHEMA";
-static const char *const error_type = "SCHEMA_ERROR";
+#define ERROR_SOURCE "SCHEMA"
+#define ERROR_TYPE "SCHEMA_ERROR"
 enum error_code { SCHEMA_SIZE_EXCEEDED };
 
 static const char *const error_messages[] = {[SCHEMA_SIZE_EXCEEDED] =
                                                  "Schema size was exceeded!"};
 
 static struct error *error_self(enum error_code error_code) {
-  return error_new(error_source, error_type, (error_code_t){error_code},
+  return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},
                    error_messages[error_code]);
 }
 
@@ -44,13 +44,15 @@ size_t table_schema_get_column_amount(struct table_schema *self) {
 
 result_t table_schema_add_column(struct table_schema *self, char *column_name,
                                  column_type_t column_type) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   if (self->current_column_index >= self->column_amount)
     THROW(error_self(SCHEMA_SIZE_EXCEEDED));
 
   self->columns[self->current_column_index].name =
-      column_name; // TODO think about strings
+      malloc(strlen(column_name) + 1);
+  strcpy(self->columns[self->current_column_index].name, column_name);
+
   self->columns[self->current_column_index].type = column_type;
 
   self->current_column_index++;
@@ -59,6 +61,9 @@ result_t table_schema_add_column(struct table_schema *self, char *column_name,
 }
 
 void table_schema_destroy(struct table_schema *self) {
+  for (size_t index = 0; index < self->current_column_index; index++) {
+    free(self->columns[index].name);
+  }
   free(self->table_name);
   free(self->columns);
   free(self);
@@ -82,10 +87,10 @@ bool column_schema_iterator_has_next(struct column_schema_iterator *self) {
 
 result_t column_schema_iterator_next(struct column_schema_iterator *self,
                                      struct column_schema **result) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   if (!column_schema_iterator_has_next(self))
-    THROW(error_common(error_source, ERR_COMMON_ITER_OUT_OF_RANGE));
+    THROW(error_common(ERROR_SOURCE, ERR_COMMON_ITER_OUT_OF_RANGE));
 
   *result = &self->columns[self->current_index];
   self->current_index++;

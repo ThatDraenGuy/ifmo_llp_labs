@@ -7,8 +7,8 @@
 #include <malloc.h>
 #include <memory.h>
 
-static const char *const error_source = "PAGE_RESOLVER";
-static const char *const error_type = "PAGE_RESOLVER_ERROR";
+#define ERROR_SOURCE "PAGE_RESOLVER"
+#define ERROR_TYPE "PAGE_RESOLVER_ERROR"
 
 enum error_code { INVALID_HEADER = 0 };
 
@@ -42,7 +42,7 @@ result_t page_resolver_flush_application_header(struct page_resolver *self) {
 
 result_t page_resolver_get_new_page_id(struct page_resolver *self,
                                        page_id_t *result_id) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
   *result_id = (page_id_t){++self->file_header.page_amount};
   self->was_file_header_altered = true;
   OK;
@@ -50,7 +50,7 @@ result_t page_resolver_get_new_page_id(struct page_resolver *self,
 
 result_t page_resolver_read_page(struct page_resolver *self, page_id_t page_id,
                                  page_t destination) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
   size_t page_size = page_resolver_get_page_size(self);
   uint32_t offset = resolve_page_offset(self, page_size, page_id);
 
@@ -60,7 +60,7 @@ result_t page_resolver_read_page(struct page_resolver *self, page_id_t page_id,
 
 result_t page_resolver_write_page(struct page_resolver *self, page_id_t page_id,
                                   page_t data) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   if (self->was_file_header_altered) {
     TRY(write_header(self));
@@ -107,7 +107,7 @@ struct page_resolver *page_resolver_new() {
 result_t page_resolver_ctor(struct page_resolver *self, char *file_name,
                             size_t application_header_size,
                             void *default_header) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   struct file_manager *file_manager = file_manager_new();
   TRY(file_manager_ctor(file_manager, file_name));
@@ -159,7 +159,7 @@ result_t page_resolver_ctor(struct page_resolver *self, char *file_name,
       free(application_header);
       file_manager_destroy(file_manager);
       free(self);
-      THROW(error_new(error_source, error_type, (error_code_t){INVALID_HEADER},
+      THROW(error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){INVALID_HEADER},
                       error_messages[INVALID_HEADER]));
     }
 

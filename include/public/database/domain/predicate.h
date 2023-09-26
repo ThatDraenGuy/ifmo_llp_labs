@@ -46,6 +46,7 @@ struct predicate *predicate_not(struct predicate *predicate);
 
 result_t predicate_apply(struct predicate *self, struct record *record,
                          bool *result);
+struct predicate *predicate_clone(struct predicate *self);
 
 void predicate_destroy(struct predicate *self);
 

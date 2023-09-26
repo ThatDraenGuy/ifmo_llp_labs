@@ -1,0 +1,36 @@
+//
+// Created by draen on 23.09.23.
+//
+
+#ifndef LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_STATEMENT_INTERFACE_H
+#define LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_STATEMENT_INTERFACE_H
+
+#include "public/database/database_manager.h"
+#include "public/database/domain/statement_interface.h"
+#include "public/database/table_manager.h"
+
+typedef enum {
+  STATEMENT_RESULT_RECORDS,
+  STATEMENT_RESULT_NONE
+} statement_result_type_t;
+
+struct statement_result {
+  statement_result_type_t type;
+  struct table *table;
+  union {
+    struct record_iterator *records;
+  };
+};
+
+struct i_statement {
+  result_t (*execute_impl)(struct i_statement *self,
+                           struct table_manager *table_manager,
+                           struct statement_result *statement_result);
+  void (*destroy_impl)(struct i_statement *self);
+};
+
+result_t statement_execute(struct i_statement *self,
+                           struct table_manager *table_manager,
+                           struct statement_result *statement_result);
+
+#endif // LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_STATEMENT_INTERFACE_H

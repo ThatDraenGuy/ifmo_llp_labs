@@ -6,7 +6,7 @@
 #include "public/error/errors_common.h"
 #include <malloc.h>
 
-static const char *const error_source = "PAGE_RESOLVER";
+#define ERROR_SOURCE "PAGE_RESOLVER"
 
 static size_t cache_entry_size(struct page_manager *self) {
   size_t page_size = page_manager_get_page_size(self);
@@ -88,7 +88,7 @@ result_t page_manager_flush_application_header(struct page_manager *self) {
 
 result_t page_manager_create_page(struct page_manager *self, page_t *result,
                                   page_id_t *result_id) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   struct cache_entry *entry = get_least_relevant_entry(self);
   TRY(flush_entry(self, entry));
@@ -108,7 +108,7 @@ result_t page_manager_create_page(struct page_manager *self, page_t *result,
 
 result_t page_manager_get_page(struct page_manager *self, page_id_t page_id,
                                page_t *result) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   for (cache_entry_index_t index = (cache_entry_index_t){.bytes = 0};
        index.bytes < self->cache_size.bytes; index.bytes++) {
@@ -127,7 +127,7 @@ size_t page_manager_get_page_size(struct page_manager *self) {
 }
 
 result_t page_manager_flush(struct page_manager *self) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   for (cache_entry_index_t index = (cache_entry_index_t){.bytes = 0};
        index.bytes < self->cache_size.bytes; index.bytes++) {
@@ -146,6 +146,7 @@ result_t page_manager_flush(struct page_manager *self) {
 }
 
 void page_manager_destroy(struct page_manager *self) {
+  page_manager_flush(self);
   page_resolver_destroy(self->page_resolver);
   cache_destroy(self);
   free(self);
@@ -158,7 +159,7 @@ struct page_manager *page_manager_new() {
 result_t page_manager_ctor(struct page_manager *self,
                            struct page_resolver *page_resolver,
                            size_t cache_size) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
   self->page_resolver = page_resolver;
   self->cache_size = (cache_entry_index_t){.bytes = cache_size};
 

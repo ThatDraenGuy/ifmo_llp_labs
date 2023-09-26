@@ -11,6 +11,7 @@ struct predicate_value {
   column_type_t type;
   result_t (*get_value_impl)(struct predicate_value *self,
                              struct record *record, column_value_t *result);
+  struct predicate_value *(*clone_impl)(struct predicate_value *self);
   void (*destroy_impl)(struct predicate_value *self);
 };
 
@@ -27,6 +28,7 @@ struct column_predicate_value {
 struct predicate {
   result_t (*apply_impl)(struct predicate *self, struct record *record,
                          bool *result);
+  struct predicate *(*clone_impl)(struct predicate *self);
   void (*destroy_impl)(struct predicate *self);
 };
 

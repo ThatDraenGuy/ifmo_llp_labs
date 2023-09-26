@@ -7,15 +7,15 @@
 #include <malloc.h>
 #include <string.h>
 
-static const char *const error_source = "PREDICATE";
-static const char *const error_type = "PREDICATE_ERROR";
+#define ERROR_SOURCE "PREDICATE"
+#define ERROR_TYPE "PREDICATE_ERROR"
 enum error_code { NON_MATCHING_TYPES };
 
 static const char *const error_messages[] = {
     [NON_MATCHING_TYPES] = "Predicate values have different types!"};
 
 static struct error *error_self(enum error_code error_code) {
-  return error_new(error_source, error_type, (error_code_t){error_code},
+  return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},
                    error_messages[error_code]);
 }
 
@@ -24,6 +24,16 @@ literal_predicate_value_destroy(struct predicate_value *predicate_value) {
   struct literal_predicate_value *self =
       (struct literal_predicate_value *)predicate_value;
   free(self);
+}
+
+static struct predicate_value *literal_new(column_value_t value,
+                                           column_type_t type);
+
+static struct predicate_value *
+literal_predicate_value_clone(struct predicate_value *predicate_value) {
+  struct literal_predicate_value *self =
+      (struct literal_predicate_value *)predicate_value;
+  return literal_new(self->value, self->parent.type);
 }
 
 static result_t
@@ -36,17 +46,24 @@ literal_predicate_value_get_value(struct predicate_value *predicate_value,
   OK;
 }
 
+static struct predicate_value *literal_new(column_value_t value,
+                                           column_type_t type) {
+  struct literal_predicate_value *self =
+      malloc(sizeof(struct literal_predicate_value));
+
+  self->value = value;
+
+  self->parent.type = type;
+  self->parent.get_value_impl = literal_predicate_value_get_value;
+  self->parent.clone_impl = literal_predicate_value_clone;
+  self->parent.destroy_impl = literal_predicate_value_destroy;
+  return (struct predicate_value *)self;
+}
+
 #define LITERAL_IMPL(Type, TypeName, ColumnTypeValue)                          \
   struct predicate_value *literal_##TypeName(Type value) {                     \
-    struct literal_predicate_value *predicate_value =                          \
-        malloc(sizeof(struct literal_predicate_value));                        \
-    predicate_value->value.TypeName##_value = value;                           \
-                                                                               \
-    predicate_value->parent.type = ColumnTypeValue;                            \
-    predicate_value->parent.get_value_impl =                                   \
-        literal_predicate_value_get_value;                                     \
-    predicate_value->parent.destroy_impl = literal_predicate_value_destroy;    \
-    return (struct predicate_value *)predicate_value;                          \
+    column_value_t column_value = (column_value_t){.TypeName##_value = value}; \
+    return literal_new(column_value, ColumnTypeValue);                         \
   }
 
 LITERAL_IMPL(uint64_t, uint64, COLUMN_TYPE_UINT64);
@@ -61,6 +78,14 @@ column_predicate_value_destroy(struct predicate_value *predicate_value) {
       (struct column_predicate_value *)predicate_value;
   free(self->column_name);
   free(self);
+}
+
+static struct predicate_value *
+column_predicate_value_clone(struct predicate_value *predicate_value) {
+  struct column_predicate_value *self =
+      (struct column_predicate_value *)predicate_value;
+
+  return column_value(self->column_name, self->parent.type);
 }
 
 static result_t
@@ -83,15 +108,23 @@ struct predicate_value *column_value(char *column_name,
 
   predicate_value->parent.type = column_type;
   predicate_value->parent.get_value_impl = column_predicate_value_get_value;
+  predicate_value->parent.clone_impl = column_predicate_value_clone;
   predicate_value->parent.destroy_impl = column_predicate_value_destroy;
   return (struct predicate_value *)predicate_value;
 }
 
 result_t predicate_apply(struct predicate *self, struct record *record,
                          bool *result) {
-  ASSERT_NOT_NULL(self, error_source);
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   return self->apply_impl(self, record, result);
+}
+
+struct predicate *predicate_clone(struct predicate *self) {
+  if (self == NULL)
+    return NULL;
+
+  return self->clone_impl(self);
 }
 
 void predicate_destroy(struct predicate *self) { self->destroy_impl(self); }
@@ -200,6 +233,13 @@ static result_t predicate_of_impl_apply(struct predicate *predicate,
   }
 }
 
+static struct predicate *predicate_of_impl_clone(struct predicate *predicate) {
+  struct predicate_of_impl *self = (struct predicate_of_impl *)predicate;
+  return predicate_of(self->first->clone_impl(self->first),
+                      self->second->clone_impl(self->second),
+                      self->comparison_operator);
+}
+
 static void predicate_of_impl_destroy(struct predicate *predicate) {
   struct predicate_of_impl *self = (struct predicate_of_impl *)predicate;
   self->first->destroy_impl(self->first);
@@ -217,6 +257,7 @@ struct predicate *predicate_of(struct predicate_value *first,
   predicate->comparison_operator = comparison_operator;
 
   predicate->parent.apply_impl = predicate_of_impl_apply;
+  predicate->parent.clone_impl = predicate_of_impl_clone;
   predicate->parent.destroy_impl = predicate_of_impl_destroy;
   return (struct predicate *)predicate;
 }
@@ -264,6 +305,19 @@ static result_t predicate_logical_impl_apply(struct predicate *predicate,
   }
 }
 
+static struct predicate *
+predicate_logical_impl_new(struct predicate *first, struct predicate *second,
+                           logical_operator_t logical_operator);
+static struct predicate *
+predicate_logical_impl_clone(struct predicate *predicate) {
+  struct predicate_logical_impl *self =
+      (struct predicate_logical_impl *)predicate;
+
+  return predicate_logical_impl_new(predicate_clone(self->first),
+                                    predicate_clone(self->second),
+                                    self->logical_operator);
+}
+
 static void predicate_logical_impl_destroy(struct predicate *predicate) {
   struct predicate_logical_impl *self =
       (struct predicate_logical_impl *)predicate;
@@ -282,6 +336,7 @@ predicate_logical_impl_new(struct predicate *first, struct predicate *second,
   predicate->logical_operator = AND;
 
   predicate->parent.apply_impl = predicate_logical_impl_apply;
+  predicate->parent.clone_impl = predicate_logical_impl_clone;
   predicate->parent.destroy_impl = predicate_of_impl_destroy;
   return (struct predicate *)predicate;
 }
