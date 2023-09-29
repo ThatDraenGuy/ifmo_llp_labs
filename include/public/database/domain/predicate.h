@@ -27,7 +27,7 @@ struct predicate_value *literal_float(float value);
       bool: literal_bool,                                                      \
       float: literal_float)(Value)
 
-struct predicate_value *column_value(str_t column_name,
+struct predicate_value *column_value(str_t table_name, str_t column_name,
                                      column_type_t column_type);
 
 struct predicate;

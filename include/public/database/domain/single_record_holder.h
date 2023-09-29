@@ -7,14 +7,20 @@
 
 #include "record.h"
 #include "schema.h"
+#include "table.h"
 
 struct single_record_holder;
 struct single_record_holder *single_record_holder_new();
 void single_record_holder_ctor(struct single_record_holder *self,
                                size_t table_schema_num, ...);
-struct record *
-single_record_holder_get_values(struct single_record_holder *self);
-void single_record_holder_clear(struct single_record_holder *self);
+void single_record_holder_ctor_with_joins(struct single_record_holder *self,
+                                          struct table *main_table,
+                                          size_t joins_num,
+                                          struct table **join_tables);
+struct record *single_record_holder_get(struct single_record_holder *self);
+void single_record_holder_clear(struct single_record_holder *self,
+                                size_t first_column, size_t last_column);
+void single_record_holder_clear_all(struct single_record_holder *self);
 void single_record_holder_destroy(struct single_record_holder *self);
 
 #endif // LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_SINGLE_RECORD_HOLDER_H

@@ -22,6 +22,7 @@ struct literal_predicate_value {
 
 struct column_predicate_value {
   struct predicate_value parent;
+  str_t table_name;
   str_t column_name;
 };
 

@@ -12,7 +12,6 @@
 
 struct item_iterator {
   struct page_iterator *page_iterator;
-  page_t current_page;
   bool is_empty;
   uint16_t next_item_index;
   item_t current_item;

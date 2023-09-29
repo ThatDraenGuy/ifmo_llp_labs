@@ -22,6 +22,8 @@ struct query_statement {
   struct i_statement parent;
   str_t from;
   struct predicate *where;
+  size_t joins_num;
+  struct join **joins;
 };
 
 struct insert_statement {

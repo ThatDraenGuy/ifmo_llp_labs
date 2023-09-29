@@ -4,6 +4,7 @@
 
 #include "private/database/domain/statements.h"
 #include <malloc.h>
+#include <stdarg.h>
 
 static result_t
 create_table_statement_execute(struct i_statement *create_table_statement,
@@ -80,19 +81,49 @@ query_statement_execute(struct i_statement *query_statement,
                         struct statement_result *statement_result) {
   struct query_statement *self = (struct query_statement *)query_statement;
 
-  struct table *table = NULL;
-  TRY(table_manager_get_table(table_manager, self->from, &table));
+  struct table *main_table = NULL;
+  TRY(table_manager_get_table(table_manager, self->from, &main_table));
   CATCH(error, THROW(error))
 
+  struct table **join_tables = malloc(sizeof(void *) * self->joins_num);
+  struct predicate **join_predicates = malloc(sizeof(void *) * self->joins_num);
+
+  for (size_t join_index = 0; join_index < self->joins_num; join_index++) {
+    struct table *join_table = NULL;
+    TRY(table_manager_get_table(
+        table_manager, join_get_what(self->joins[join_index]), &join_table));
+    CATCH(error, {
+      for (size_t index = 0; index < self->joins_num; index++) {
+        table_destroy(join_tables[index]);
+      }
+      free(join_tables);
+      free(join_predicates);
+      THROW(error);
+    })
+
+    join_tables[join_index] = join_table;
+
+    join_predicates[join_index] = join_get_on(self->joins[join_index]);
+  }
+
   struct record_view *view = NULL;
-  TRY(table_manager_find(table_manager, table, predicate_clone(self->where),
-                         &view));
+  TRY(table_manager_find_with_joins(
+      table_manager, main_table, predicate_clone(self->where), self->joins_num,
+      join_tables, join_predicates, &view));
   CATCH(error, {
-    table_destroy(table);
+    table_destroy(main_table);
+    for (size_t index = 0; index < self->joins_num; index++) {
+      table_destroy(join_tables[index]);
+    }
+    free(join_tables);
+    free(join_predicates);
     THROW(error);
   })
 
-  statement_result->table = table;
+  statement_result->table = main_table;
+  statement_result->join_tables = join_tables;
+  statement_result->join_predicates = join_predicates;
+  statement_result->joins_num = self->joins_num;
   statement_result->records = view;
   statement_result->type = STATEMENT_RESULT_RECORDS;
   OK;
@@ -101,6 +132,10 @@ query_statement_execute(struct i_statement *query_statement,
 void query_statement_destroy(struct i_statement *query_statement) {
   struct query_statement *self = (struct query_statement *)query_statement;
   predicate_destroy(self->where);
+  for (size_t index = 0; index < self->joins_num; index++) {
+    join_destroy(self->joins[index]);
+  }
+  free(self->joins);
   free(self);
 }
 
@@ -109,9 +144,19 @@ struct query_statement *query_statement_new() {
 }
 
 struct i_statement *query_statement_ctor(struct query_statement *self,
-                                         str_t from, struct predicate *where) {
+                                         str_t from, struct predicate *where,
+                                         size_t joins_num, ...) {
   self->from = from;
   self->where = where;
+  self->joins_num = joins_num;
+  self->joins = malloc(sizeof(void *) * joins_num);
+
+  va_list joins;
+  va_start(joins, joins_num);
+  for (size_t index = 0; index < joins_num; index++) {
+    self->joins[index] = va_arg(joins, struct join *);
+  }
+  va_end(joins);
 
   self->parent.execute_impl = query_statement_execute;
   self->parent.destroy_impl = query_statement_destroy;

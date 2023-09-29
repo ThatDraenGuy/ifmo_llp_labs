@@ -32,9 +32,9 @@ struct table_manager {
 };
 //
 // struct record_iterator {
-//  struct item_iterator *item_it;
+//  struct item_iterator *main_item_it;
 //  struct table *table;
-//  struct predicate *predicate;
+//  struct where *where;
 //  struct record *current_record;
 //  struct record *next_record;
 //  bool is_empty;

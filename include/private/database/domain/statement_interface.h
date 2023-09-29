@@ -17,6 +17,9 @@ typedef enum {
 struct statement_result {
   statement_result_type_t type;
   struct table *table;
+  size_t joins_num;
+  struct table **join_tables;
+  struct predicate **join_predicates;
   union {
     struct record_view *records;
   };

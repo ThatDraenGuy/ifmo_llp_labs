@@ -9,6 +9,7 @@
 #include "domain/record_group.h"
 #include "domain/record_view.h"
 #include "domain/schema.h"
+#include "domain/single_record_holder.h"
 #include "domain/table.h"
 #include "public/util/result.h"
 
@@ -26,15 +27,24 @@ result_t table_manager_get_table(struct table_manager *self, str_t table_name,
 
 result_t table_manager_drop_table(struct table_manager *self, str_t table_name);
 
-result_t
-table_manager_find(struct table_manager *self, struct table *table,
-                   struct predicate *predicate,
+result_t table_manager_find_one(struct table_manager *self, struct table *table,
+                                struct predicate *predicate,
+                                size_t column_offset,
+                                struct single_record_holder *target);
+
+result_t table_manager_find(struct table_manager *self, struct table *table,
+                            struct predicate *predicate,
                             struct record_view **result);
 
-result_t table_manager_find_first(struct table_manager *self,
-                                  struct table *table,
-                                  struct predicate *predicate,
-                                  struct record_group **result);
+result_t table_manager_find_with_joins(
+    struct table_manager *self, struct table *table,
+    struct predicate *predicate, size_t joins_num, struct table **join_tables,
+    struct predicate **join_predicates, struct record_view **result);
+
+// result_t table_manager_find_first(struct table_manager *self,
+//                                   struct table *table,
+//                                   struct predicate *predicate,
+//                                   struct record_group **result);
 
 result_t table_manager_insert(struct table_manager *self, struct table *table,
                               struct record_group *records);

@@ -26,6 +26,10 @@ str_t column_schema_get_name(struct column_schema *self) {
   return string_as_str(self->name);
 }
 
+str_t column_schema_get_table_name(struct column_schema *self) {
+  return self->table_name;
+}
+
 struct table_schema *table_schema_new() {
   return malloc(sizeof(struct table_schema));
 }

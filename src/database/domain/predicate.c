@@ -90,7 +90,7 @@ column_predicate_value_clone(struct predicate_value *predicate_value) {
   struct column_predicate_value *self =
       (struct column_predicate_value *)predicate_value;
 
-  return column_value(self->column_name, self->parent.type);
+  return column_value(self->table_name, self->column_name, self->parent.type);
 }
 
 static result_t
@@ -100,14 +100,15 @@ column_predicate_value_get_value(struct predicate_value *predicate_value,
   struct column_predicate_value *self =
       (struct column_predicate_value *)predicate_value;
 
-  return record_get_value(record, self->column_name, result);
+  return record_get_value(record, self->table_name, self->column_name, result);
 }
 
-struct predicate_value *column_value(str_t column_name,
+struct predicate_value *column_value(str_t table_name, str_t column_name,
                                      column_type_t column_type) {
   struct column_predicate_value *predicate_value =
       malloc(sizeof(struct column_predicate_value));
 
+  predicate_value->table_name = table_name;
   predicate_value->column_name = column_name;
 
   predicate_value->parent.type = column_type;

@@ -15,11 +15,11 @@ typedef struct {
 } cache_entry_index_t;
 
 typedef struct {
-  uint8_t bytes;
+  size_t bytes;
 } relevancy_value_t;
 
-#define MOST_RELEVANT_VALUE                                                    \
-  (relevancy_value_t) { .bytes = UINT8_MAX }
+#define RELEVANCY_VALUE_MAX                                                    \
+  (relevancy_value_t) { .bytes = SIZE_MAX }
 
 #define LEAST_RELEVANT_VALUE                                                   \
   (relevancy_value_t) { .bytes = 0 }
@@ -33,6 +33,8 @@ struct cache_entry {
 
 struct page_manager {
   struct page_resolver *page_resolver;
+  relevancy_value_t current_most_relevant_value;
+  page_id_t last_accessed_page;
   cache_entry_index_t cache_size;
   uint8_t *cache;
 };

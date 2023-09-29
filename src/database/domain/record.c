@@ -18,11 +18,12 @@ static struct error *error_self(enum error_code error_code) {
                    error_messages[error_code]);
 }
 
-static result_t find_schema(struct column_schema_group *group,
+static result_t find_schema(struct column_schema_group *group, str_t table_name,
                             str_t column_name, size_t *result_index) {
   for (size_t index = 0; index < group->columns_amount; index++) {
     struct column_schema *schema = group->schemas[index];
-    if (str_eq(column_name, column_schema_get_name(schema))) {
+    if (str_eq(table_name, column_schema_get_table_name(schema)) &&
+        str_eq(column_name, column_schema_get_name(schema))) {
       *result_index = index;
       OK;
     }
@@ -30,22 +31,24 @@ static result_t find_schema(struct column_schema_group *group,
   THROW(error_self(COLUMN_NOT_FOUND));
 }
 
-result_t record_get_value(struct record *self, str_t column_name,
-                          column_value_t *result) {
+result_t record_get_value(struct record *self, str_t table_name,
+                          str_t column_name, column_value_t *result) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
   size_t column_index = 0;
-  TRY(find_schema(self->column_schema_group, column_name, &column_index));
+  TRY(find_schema(self->column_schema_group, table_name, column_name,
+                  &column_index));
   CATCH(error, THROW(error))
   *result = self->values[column_index];
   OK;
 }
 
 #define RECORD_GET_IMPL(Type, TypeName, ColumnTypeValue, ValueMapFunc)         \
-  result_t record_get_##TypeName(struct record *self, str_t column_name,       \
-                                 Type *result) {                               \
+  result_t record_get_##TypeName(struct record *self, str_t table_name,        \
+                                 str_t column_name, Type *result) {            \
     ASSERT_NOT_NULL(self, ERROR_SOURCE);                                       \
     size_t column_index = 0;                                                   \
-    TRY(find_schema(self->column_schema_group, column_name, &column_index));   \
+    TRY(find_schema(self->column_schema_group, table_name, column_name,        \
+                    &column_index));                                           \
     CATCH(error, THROW(error))                                                 \
     struct column_schema *schema =                                             \
         self->column_schema_group->schemas[column_index];                      \
@@ -62,17 +65,22 @@ RECORD_GET_IMPL(float, float, COLUMN_TYPE_FLOAT, )
 RECORD_GET_IMPL(bool, bool, COLUMN_TYPE_BOOL, )
 RECORD_GET_IMPL(str_t, string, COLUMN_TYPE_STRING, string_as_str)
 
-void record_clear(struct record *self) {
-  for (size_t index = 0; index < self->column_schema_group->columns_amount;
-       index++) {
+void record_clear(struct record *self, size_t first_column,
+                  size_t last_column) {
+  for (size_t index = first_column; index < last_column; index++) {
     column_value_t value = self->values[index];
     struct column_schema *column_schema =
         self->column_schema_group->schemas[index];
 
     if (column_schema_get_type(column_schema) == COLUMN_TYPE_STRING &&
-        value.string_value != NULL)
+        value.string_value != NULL) {
       string_destroy(value.string_value);
+      value.string_value = NULL;
+    }
   }
+}
+void record_clear_all(struct record *self) {
+  record_clear(self, 0, self->column_schema_group->columns_amount);
 }
 
 struct record *record_new(struct column_schema_group *column_schema_group) {
@@ -89,6 +97,6 @@ struct record *record_new(struct column_schema_group *column_schema_group) {
 }
 
 void record_destroy(struct record *self) {
-  record_clear(self);
+  record_clear_all(self);
   free(self);
 }

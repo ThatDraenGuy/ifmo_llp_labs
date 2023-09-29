@@ -11,6 +11,7 @@
 #include "public/util/result.h"
 
 item_t record_serialize(struct record *record);
-result_t record_deserialize(item_t item, struct record *target);
+result_t record_deserialize(item_t item, struct record *target,
+                            size_t start_column_index, size_t end_column_index);
 
 #endif // LLP_LAB_INCLUDE_PUBLIC_DATABASE_RECORD_SERIALIZATION_H

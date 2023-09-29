@@ -19,7 +19,7 @@ struct record_group *record_group_new() {
 
 static void record_values_clear(void *record_values) {
   struct record *self = (struct record *)record_values;
-  record_clear(self);
+  record_clear_all(self);
 }
 
 result_t record_group_ctor(struct record_group *self, size_t table_schema_num,
@@ -104,6 +104,7 @@ result_t record_group_insert(struct record_group *self, size_t values_num,
       break;
     }
   }
+  va_end(args);
 
   OK;
 }

@@ -5,6 +5,7 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_STATEMENTS_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_STATEMENTS_H
 
+#include "join.h"
 #include "record_group.h"
 #include "statement_interface.h"
 
@@ -22,7 +23,8 @@ struct i_statement *drop_table_statement_ctor(struct drop_table_statement *self,
 struct query_statement;
 struct query_statement *query_statement_new();
 struct i_statement *query_statement_ctor(struct query_statement *self,
-                                         str_t from, struct predicate *where);
+                                         str_t from, struct predicate *where,
+                                         size_t joins_num, ...);
 
 struct insert_statement;
 struct insert_statement *insert_statement_new();

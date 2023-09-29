@@ -14,7 +14,16 @@
 bool page_iterator_has_next(struct page_iterator *self) {
   return !page_id_is_null(self->next_page_id);
 }
+result_t page_iterator_current(struct page_iterator *self, page_t *result) {
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
+  page_t page = PAGE_NULL;
+  TRY(page_manager_get_page(self->page_manager, self->current_page_id, &page));
+  CATCH(error, THROW(error))
 
+  // skip page_header for the resulting page
+  result->data = page.data + sizeof(struct page_header);
+  OK;
+}
 result_t page_iterator_next(struct page_iterator *self, page_t *result) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
@@ -125,22 +134,25 @@ result_t page_group_manager_add_page(struct page_group_manager *self,
                                      struct page_iterator *it, page_t *result) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
-  page_id_t page_id = PAGE_ID_NULL;
-  TRY(create_page(self, result, &page_id));
+  page_id_t new_last_page_id = PAGE_ID_NULL;
+  page_t new_page = PAGE_NULL;
+  TRY(create_page(self, &new_page, &new_last_page_id));
+  CATCH(error, THROW(error))
+  result->data = new_page.data + sizeof(struct page_header);
+
+  page_t old_last_page = PAGE_NULL;
+  TRY(page_manager_get_page(self->page_manager, it->current_page_id,
+                            &old_last_page));
   CATCH(error, THROW(error))
 
-  page_t page = PAGE_NULL;
-  TRY(page_manager_get_page(self->page_manager, it->current_page_id, &page));
-  CATCH(error, THROW(error))
-
-  struct page_header *page_header = page.data;
-  struct page_header *new_page_header = result->data;
+  struct page_header *old_page_header = old_last_page.data;
+  struct page_header *new_page_header = new_page.data;
   if (page_iterator_has_next(it)) {
-    new_page_header->next = page_header->next;
+    new_page_header->next = old_page_header->next;
   } else {
     new_page_header->next = PAGE_ID_NULL;
   }
-  page_header->next = page_id;
+  old_page_header->next = new_last_page_id;
 
   OK;
 }

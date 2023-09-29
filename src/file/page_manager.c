@@ -5,6 +5,7 @@
 #include "private/file/page_manager.h"
 #include "public/error/errors_common.h"
 #include <malloc.h>
+#include <memory.h>
 
 #define ERROR_SOURCE "PAGE_RESOLVER"
 
@@ -58,6 +59,29 @@ static result_t flush_entry(struct page_manager *self,
                                   (page_t){entry->contents});
 }
 
+static void reset_relevancy_values(struct page_manager *self) {
+  for (cache_entry_index_t index = (cache_entry_index_t){.bytes = 0};
+       index.bytes < self->cache_size.bytes; index.bytes++) {
+    struct cache_entry *entry = get_cache_entry(self, index);
+    entry->relevancy_value.bytes = 0;
+  }
+  self->current_most_relevant_value.bytes = 1;
+}
+
+static relevancy_value_t get_relevancy_value(struct page_manager *self,
+                                             page_id_t page_id) {
+  if (self->current_most_relevant_value.bytes == RELEVANCY_VALUE_MAX.bytes) {
+    reset_relevancy_values(self);
+  }
+  if (self->last_accessed_page.bytes == page_id.bytes) {
+    return self->current_most_relevant_value;
+  } else {
+    self->current_most_relevant_value.bytes++;
+    self->last_accessed_page = page_id;
+    return self->current_most_relevant_value;
+  }
+}
+
 static result_t load_page_from_resolver(struct page_manager *self,
                                         page_id_t page_id, page_t *result) {
 
@@ -66,15 +90,17 @@ static result_t load_page_from_resolver(struct page_manager *self,
   CATCH(error, THROW(error))
 
   result->data = entry->contents;
-  entry->relevancy_value = MOST_RELEVANT_VALUE;
+  entry->relevancy_value = get_relevancy_value(self, page_id);
+  entry->page_id = page_id;
   return page_resolver_read_page(self->page_resolver, page_id, *result);
 }
 
 static void load_page_from_cache(struct page_manager *self,
                                  cache_entry_index_t cache_index,
-                                 page_t *result) {
+                                 page_id_t page_id, page_t *result) {
   struct cache_entry *entry = get_cache_entry(self, cache_index);
   entry->is_altered = true;
+  entry->relevancy_value = get_relevancy_value(self, page_id);
   result->data = entry->contents;
 }
 
@@ -94,8 +120,9 @@ result_t page_manager_create_page(struct page_manager *self, page_t *result,
   TRY(flush_entry(self, entry));
   CATCH(error, THROW(error))
 
-  entry->relevancy_value = MOST_RELEVANT_VALUE;
+  entry->relevancy_value = get_relevancy_value(self, PAGE_ID_NULL);
   entry->is_altered = true;
+  memset(entry->contents, '\0', page_manager_get_page_size(self));
   TRY(page_resolver_get_new_page_id(self->page_resolver, &entry->page_id));
   CATCH(error, THROW(error))
 
@@ -115,7 +142,7 @@ result_t page_manager_get_page(struct page_manager *self, page_id_t page_id,
     struct cache_entry *entry = get_cache_entry(self, index);
     if (entry->relevancy_value.bytes != 0 &&
         entry->page_id.bytes == page_id.bytes) {
-      load_page_from_cache(self, index, result);
+      load_page_from_cache(self, index, page_id, result);
       OK;
     }
   }
@@ -162,6 +189,8 @@ result_t page_manager_ctor(struct page_manager *self,
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
   self->page_resolver = page_resolver;
   self->cache_size = (cache_entry_index_t){.bytes = cache_size};
+  self->current_most_relevant_value = (relevancy_value_t){1};
+  self->last_accessed_page = PAGE_ID_NULL;
 
   cache_new(self);
 

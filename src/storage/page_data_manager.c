@@ -13,7 +13,9 @@
 bool item_iterator_has_next(struct item_iterator *self) {
   if (self->is_empty)
     return false;
-  struct page_data_header *page_header = self->current_page.data;
+  page_t page = PAGE_NULL;
+  page_iterator_current(self->page_iterator, &page);
+  struct page_data_header *page_header = page.data;
   if (self->next_item_index < page_header->item_amount)
     return true;
 
@@ -23,27 +25,31 @@ bool item_iterator_has_next(struct item_iterator *self) {
 result_t item_iterator_next(struct item_iterator *self, item_t *result) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
-  struct page_data_header *page = self->current_page.data;
+  page_t page = PAGE_NULL;
+  TRY(page_iterator_current(self->page_iterator, &page));
+  CATCH(error, THROW(error))
+  struct page_data_header *page_header = page.data;
 
   if (!item_iterator_has_next(self))
     THROW(error_common(ERROR_SOURCE, ERR_COMMON_ITER_OUT_OF_RANGE));
 
-  if (self->next_item_index >= page->item_amount) {
-    TRY(page_iterator_next(self->page_iterator, &self->current_page));
+  if (self->next_item_index >= page_header->item_amount) {
+    TRY(page_iterator_next(self->page_iterator, &page));
     CATCH(error, THROW(error))
 
     self->next_item_index = 0;
-    page = self->current_page.data;
+    page_header = page.data;
   }
 
   page_item_id_t page_item_id =
-      (page_item_id_t)(page->contents + self->next_item_index *
-                                            sizeof(struct page_item_id_data));
+      (page_item_id_t)(page_header->contents +
+                       self->next_item_index *
+                           sizeof(struct page_item_id_data));
   self->next_item_index++;
 
   self->current_item =
       (item_t){.size = page_item_id->item_size.bytes,
-               page->contents + page_item_id->item_offset.bytes};
+               page_header->contents + page_item_id->item_offset.bytes};
 
   *result = self->current_item;
   OK;
@@ -64,13 +70,14 @@ item_iterator_new(struct page_data_manager *page_data_manager,
   it->next_item_index = 0;
 
   if (page_iterator_has_next(it->page_iterator)) {
-    TRY(page_iterator_next(it->page_iterator, &it->current_page));
+    page_t page = PAGE_NULL;
+    TRY(page_iterator_next(it->page_iterator, &page));
     CATCH(error, {
       it->is_empty = true;
       return it;
     })
 
-    struct page_data_header *header = it->current_page.data;
+    struct page_data_header *header = page.data;
     if (header->item_amount == 0) {
       it->is_empty = true;
       return it;
@@ -260,7 +267,10 @@ result_t page_data_manager_insert(struct page_data_manager *self,
   while (page_iterator_has_next(page_it)) {
     page_t page = PAGE_NULL;
     TRY(page_iterator_next(page_it, &page));
-    CATCH(error, THROW(error))
+    CATCH(error, {
+      page_iterator_destroy(page_it);
+      THROW(error);
+    })
 
     struct page_data_header *page_header = page.data;
 
@@ -274,7 +284,10 @@ result_t page_data_manager_insert(struct page_data_manager *self,
 
   page_t page = PAGE_NULL;
   TRY(page_group_manager_add_page(self->page_group_manager, page_it, &page));
-  CATCH(error, THROW(error))
+  CATCH(error, {
+    page_iterator_destroy(page_it);
+    THROW(error);
+  })
 
   struct page_data_header *page_header = page.data;
 
@@ -299,11 +312,14 @@ void page_data_manager_destroy(struct page_data_manager *self) {
 }
 
 void item_iterator_delete_item(struct item_iterator *self) {
-  struct page_data_header *page = self->current_page.data;
+  page_t page = PAGE_NULL;
+  page_iterator_current(self->page_iterator, &page);
+  struct page_data_header *page_header = page.data;
 
   page_item_id_t page_item_id =
-      (page_item_id_t)(page->contents + self->next_item_index *
-                                            sizeof(struct page_item_id_data));
+      (page_item_id_t)(page_header->contents +
+                       self->next_item_index *
+                           sizeof(struct page_item_id_data));
   page_item_id->is_deleted = true;
 }
 

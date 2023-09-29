@@ -98,12 +98,13 @@ static result_t deserialize_column(item_t item, size_t *item_offset,
   record_insert(target, column_index, column_value);
   OK;
 }
-result_t record_deserialize(item_t item, struct record *target) {
+result_t record_deserialize(item_t item, struct record *target,
+                            size_t start_column_index,
+                            size_t end_column_index) {
   ASSERT_NOT_NULL(target, ERROR_SOURCE);
-  size_t columns_amount = target->column_schema_group->columns_amount;
 
   size_t current_item_offset = 0;
-  for (size_t index = 0; index < columns_amount; index++) {
+  for (size_t index = start_column_index; index < end_column_index; index++) {
     struct column_schema *schema = target->column_schema_group->schemas[index];
 
     TRY(deserialize_column(item, &current_item_offset, schema, index, target));
@@ -112,30 +113,6 @@ result_t record_deserialize(item_t item, struct record *target) {
 
   OK;
 }
-// result_t record_deserialize(item_t item, struct table_schema *schema,
-//                             struct record *target) {
-//   ASSERT_NOT_NULL(target, ERROR_SOURCE);
-//
-//   size_t current_item_offset = 0;
-//   struct column_schema_iterator *it = table_schema_get_columns(schema);
-//   while (column_schema_iterator_has_next(it)) {
-//     struct column_schema *column_schema = NULL;
-//     TRY(column_schema_iterator_next(it, &column_schema));
-//     CATCH(error, {
-//       column_schema_iterator_destroy(it);
-//       THROW(error);
-//     })
-//
-//     TRY(deserialize_column(item, &current_item_offset, column_schema,
-//     target)); CATCH(error, {
-//       column_schema_iterator_destroy(it);
-//       THROW(error);
-//     })
-//   }
-//   column_schema_iterator_destroy(it);
-//
-//   OK;
-// }
 
 static void calculate_column_size(column_value_t column_value,
                                   column_type_t column_type,

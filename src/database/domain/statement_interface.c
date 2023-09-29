@@ -21,6 +21,13 @@ void statement_result_clear(struct statement_result *self) {
   case STATEMENT_RESULT_RECORDS:
     record_view_destroy(self->records);
     table_destroy(self->table);
+    free(self->join_predicates);
+
+    for (size_t index = 0; index < self->joins_num; index++) {
+      table_destroy(self->join_tables[index]);
+    }
+    free(self->join_tables);
+
     break;
   case STATEMENT_RESULT_NONE:
     break;
