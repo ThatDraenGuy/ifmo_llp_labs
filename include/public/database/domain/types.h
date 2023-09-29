@@ -5,6 +5,7 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_TYPES_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_TYPES_H
 
+#include "public/util/string.h"
 #include <stdint.h>
 
 typedef enum {
@@ -19,8 +20,17 @@ typedef union {
   int32_t int32_value;
   uint64_t uint64_value;
   float float_value;
-  char *string_value;
+  string_t string_value;
   bool bool_value;
 } column_value_t;
+
+#define COLUMN_VALUE(Value)                                                    \
+  _Generic(Value,                                                              \
+      int32_t: COLUMN_TYPE_INT32,                                              \
+      uint64_t: COLUMN_TYPE_UINT64,                                            \
+      float: COLUMN_TYPE_FLOAT,                                                \
+      str_t: COLUMN_TYPE_STRING,                                               \
+      bool: COLUMN_TYPE_BOOL),                                                 \
+      Value
 
 #endif // LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_TYPES_H

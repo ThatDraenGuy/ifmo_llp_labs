@@ -10,6 +10,7 @@
   THROW(error_common(ErrorSource, ERR_COMMON_NULL_POINTER))
 
 #include "public/error/error.h"
+#include "public/util/string.h"
 
 typedef enum {
   ERR_COMMON_NULL_POINTER = 0,

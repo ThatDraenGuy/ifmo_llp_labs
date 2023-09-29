@@ -1,28 +1,19 @@
 //
-// Created by draen on 15.09.23.
+// Created by draen on 27.09.23.
 //
 
 #ifndef LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_H
 #define LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_H
 
-#include "private/database/domain/schema.h"
 #include "public/database/domain/record.h"
-#include "public/storage/domain/page_group.h"
-#include "public/util/queue.h"
-#include "schema.h"
-
-struct record_entry {
-  struct column_schema schema;
-  column_value_t value;
-};
+#include "public/database/domain/types.h"
 
 struct record {
-  struct queue *entries;
+  struct column_schema_group *column_schema_group;
+  column_value_t values[];
 };
 
-result_t record_copy_into(struct record *self, struct record *target);
-
-result_t record_insert_value(struct record *self, char *column_name,
-                             column_value_t value, column_type_t type);
+struct record *record_new(struct column_schema_group *column_schema_group);
+void record_destroy(struct record *self);
 
 #endif // LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_H

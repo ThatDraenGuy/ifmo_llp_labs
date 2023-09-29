@@ -5,7 +5,6 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_STORAGE_DATABASE_MANAGER_H
 #define LLP_LAB_INCLUDE_PUBLIC_STORAGE_DATABASE_MANAGER_H
 
-#include "domain/record_iterator.h"
 #include "domain/schema.h"
 #include "domain/statement_interface.h"
 #include "public/util/result.h"

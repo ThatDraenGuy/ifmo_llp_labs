@@ -12,15 +12,15 @@ struct statement_result *statement_result_new() {
   return malloc(sizeof(struct statement_result));
 }
 
-struct record_iterator *
-statement_result_records(struct statement_result *self) {
+struct record_view *statement_result_records(struct statement_result *self) {
   return self->records;
 }
 
 void statement_result_clear(struct statement_result *self) {
   switch (self->type) {
   case STATEMENT_RESULT_RECORDS:
-    record_iterator_destroy(self->records);
+    record_view_destroy(self->records);
+    table_destroy(self->table);
     break;
   case STATEMENT_RESULT_NONE:
     break;

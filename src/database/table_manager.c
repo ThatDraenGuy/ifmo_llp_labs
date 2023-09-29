@@ -3,8 +3,11 @@
 //
 
 #include "private/database/table_manager.h"
-#include "private/database/domain/record.h"
+#include "private/database/domain/record_view.h"
+#include "private/database/domain/schema.h"
 #include "private/database/domain/table.h"
+#include "public/database/domain/record.h"
+#include "public/database/domain/single_record_holder.h"
 #include "public/database/record_serialization.h"
 #include "public/error/errors_common.h"
 #include <malloc.h>
@@ -120,25 +123,31 @@ static result_t get_next_table_id(struct table_manager *self,
 static void initialize_meta_tables(struct table_manager *self,
                                    struct meta_contents *meta_contents) {
   struct table_schema *table_data_table_schema = table_schema_new();
-  table_schema_ctor(table_data_table_schema, TABLE_DATA_TABLE_NAME, 3);
+  table_schema_ctor(table_data_table_schema, TABLE_DATA_TABLE_NAME(), 4);
   table_schema_add_column(table_data_table_schema,
-                          TABLE_DATA_TABLE_COLUMN_TABLE_ID, COLUMN_TYPE_UINT64);
+                          TABLE_DATA_TABLE_COLUMN_TABLE_ID(),
+                          COLUMN_TYPE_UINT64);
   table_schema_add_column(table_data_table_schema,
-                          TABLE_DATA_TABLE_COLUMN_TABLE_NAME,
+                          TABLE_DATA_TABLE_COLUMN_TABLE_NAME(),
                           COLUMN_TYPE_STRING);
   table_schema_add_column(table_data_table_schema,
-                          TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID,
+                          TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID(),
+                          COLUMN_TYPE_UINT64);
+  table_schema_add_column(table_data_table_schema,
+                          TABLE_DATA_TABLE_COLUMN_COLUMNS_AMOUNT(),
                           COLUMN_TYPE_UINT64);
 
   struct table_schema *table_columns_table_schema = table_schema_new();
-  table_schema_ctor(table_columns_table_schema, TABLE_COLUMNS_TABLE_NAME, 3);
+  table_schema_ctor(table_columns_table_schema, TABLE_COLUMNS_TABLE_NAME(), 3);
   table_schema_add_column(table_columns_table_schema,
-                          TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID,
+                          TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID(),
                           COLUMN_TYPE_UINT64);
   table_schema_add_column(table_columns_table_schema,
-                          TABLE_COLUMNS_TABLE_COLUMN_NAME, COLUMN_TYPE_STRING);
+                          TABLE_COLUMNS_TABLE_COLUMN_NAME(),
+                          COLUMN_TYPE_STRING);
   table_schema_add_column(table_columns_table_schema,
-                          TABLE_COLUMNS_TABLE_COLUMN_TYPE, COLUMN_TYPE_UINT64);
+                          TABLE_COLUMNS_TABLE_COLUMN_TYPE(),
+                          COLUMN_TYPE_UINT64);
 
   self->table_data_table = table_new();
   table_ctor(self->table_data_table, table_data_table_schema,
@@ -192,125 +201,75 @@ static result_t find_first_maybe_delete(struct table_manager *self,
                                         struct table *table,
                                         struct predicate *predicate,
                                         bool do_delete,
-                                        struct record **result) {
+                                        struct single_record_holder **result) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   struct item_iterator *it = page_data_manager_get_items(
       self->page_data_manager, table->page_group_id);
 
-  struct record *record = record_new();
-  record_ctor(record);
+  *result = single_record_holder_new();
+  single_record_holder_ctor(*result, 1, table_get_schema(table));
   while (item_iterator_has_next(it)) {
     item_t item = ITEM_NULL;
     TRY(item_iterator_next(it, &item));
     CATCH(error, {
       item_iterator_destroy(it);
-      record_destroy(record);
+      single_record_holder_destroy(*result);
       THROW(error);
     })
 
-    TRY(record_deserialize(item, table->table_schema, record));
+    TRY(record_deserialize(item, single_record_holder_get_values((*result))));
     CATCH(error, {
       item_iterator_destroy(it);
-      record_destroy(record);
+      single_record_holder_destroy(*result);
       THROW(error);
     })
 
     bool predicate_result = false;
-    TRY(predicate_apply(predicate, record, &predicate_result));
+    TRY(predicate_apply(predicate, single_record_holder_get_values((*result)),
+                        &predicate_result));
     CATCH(error, {
       item_iterator_destroy(it);
-      record_destroy(record);
+      single_record_holder_destroy(*result);
       THROW(error);
     })
     if (predicate_result) {
       if (do_delete)
         item_iterator_delete_item(it);
       item_iterator_destroy(it);
-      *result = record;
       OK;
     }
   }
 
   item_iterator_destroy(it);
-  record_destroy(record);
+  single_record_holder_destroy(*result);
   THROW(error_self(NO_RECORD_FOUND));
-}
-
-result_t table_manager_find_first(struct table_manager *self,
-                                  struct table *table,
-                                  struct predicate *predicate,
-                                  struct record **result) {
-  return find_first_maybe_delete(self, table, predicate, false, result);
-}
-
-bool record_iterator_has_next(struct record_iterator *self) {
-  return !self->is_empty;
-}
-
-result_t record_iterator_next(struct record_iterator *self,
-                              struct record **result) {
-  record_clear(self->current_record);
-  TRY(record_copy_into(self->next_record, self->current_record));
-  CATCH(error, THROW(error))
-
-  *result = self->current_record;
-
-  // try to find next applicable item
-  while (item_iterator_has_next(self->item_it)) {
-    record_clear(self->next_record);
-
-    item_t new_item = ITEM_NULL;
-    TRY(item_iterator_next(self->item_it, &new_item));
-    CATCH(error, THROW(error))
-
-    TRY(record_deserialize(new_item, self->table->table_schema,
-                           self->next_record));
-    CATCH(error, THROW(error))
-
-    bool predicate_res = false;
-    TRY(predicate_apply(self->predicate, self->next_record, &predicate_res));
-    CATCH(error, THROW(error))
-    if (predicate_res) {
-      OK;
-    }
-  }
-  self->is_empty = true;
-  OK;
-}
-
-void record_iterator_destroy(struct record_iterator *self) {
-  predicate_destroy(self->predicate);
-  item_iterator_destroy(self->item_it);
-  record_destroy(self->current_record);
-  record_destroy(self->next_record);
-  free(self);
 }
 
 result_t table_manager_find(struct table_manager *self, struct table *table,
                             struct predicate *predicate,
-                            struct record_iterator **result) {
+                            struct record_view **result) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
-  struct item_iterator *item_it = page_data_manager_get_items(
-      self->page_data_manager, table->page_group_id);
-
-  *result = malloc(sizeof(struct record_iterator));
-  (*result)->table = table;
-  (*result)->item_it = item_it;
-  (*result)->predicate = predicate;
+  *result = malloc(sizeof(struct record_view));
+  (*result)->item_it = page_data_manager_get_items(self->page_data_manager,
+                                                   table->page_group_id);
+  (*result)->schema = table->table_schema;
   (*result)->is_empty = false;
+  (*result)->predicate = predicate;
 
-  (*result)->current_record = record_new();
-  record_ctor((*result)->current_record);
-  (*result)->next_record = record_new();
-  record_ctor((*result)->next_record);
+  (*result)->next_record_holder = single_record_holder_new();
+  single_record_holder_ctor((*result)->next_record_holder, 1,
+                            table->table_schema);
 
-  // preload first item (needed for predefined has_next calls)
-  struct record *record = NULL;
-  TRY(record_iterator_next(*result, &record));
+  (*result)->current_record_holder = single_record_holder_new();
+  single_record_holder_ctor((*result)->current_record_holder, 1,
+                            table->table_schema);
+
+  struct record *values = NULL;
+  TRY(record_view_next(*result, &values));
   CATCH(error, {
-    record_iterator_destroy(*result);
+    record_view_destroy(*result);
     THROW(error);
   })
 
@@ -318,19 +277,30 @@ result_t table_manager_find(struct table_manager *self, struct table *table,
 }
 
 result_t table_manager_insert(struct table_manager *self, struct table *table,
-                              struct record *record) {
+                              struct record_group *records) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
-  item_t item = record_serialize(record);
+  struct record_iterator *it = record_group_get_records(records);
+  while (record_iterator_has_next(it)) {
+    struct record *record = NULL;
+    TRY(record_iterator_next(it, &record));
+    CATCH(error, {
+      record_iterator_destroy(it);
+      THROW(error);
+    })
 
-  TRY(page_data_manager_insert(self->page_data_manager, table->page_group_id,
-                               item));
-  CATCH(error, {
+    item_t item = record_serialize(record); // TODO
+    TRY(page_data_manager_insert(self->page_data_manager, table->page_group_id,
+                                 item));
+    CATCH(error, {
+      item_destroy(item);
+      record_iterator_destroy(it);
+      THROW(error);
+    })
     item_destroy(item);
-    THROW(error);
-  })
+  }
+  record_iterator_destroy(it);
 
-  item_destroy(item);
   OK;
 }
 
@@ -341,34 +311,39 @@ result_t table_manager_delete(struct table_manager *self, struct table *table,
   struct item_iterator *it = page_data_manager_get_items(
       self->page_data_manager, table->page_group_id);
 
-  struct record *record = record_new();
-  record_ctor(record);
+  struct record_group *record_group = record_group_new();
+  record_group_ctor(record_group, 1, table->table_schema);
   while (item_iterator_has_next(it)) {
     item_t item = ITEM_NULL;
     TRY(item_iterator_next(it, &item));
     CATCH(error, {
       item_iterator_destroy(it);
-      record_destroy(record);
+      record_group_destroy(record_group);
       THROW(error);
     })
 
-    TRY(record_deserialize(item, table->table_schema, record));
+    struct single_record_holder *record_holder = single_record_holder_new();
+    single_record_holder_ctor(record_holder, 1, table_get_schema(table));
+    TRY(record_deserialize(item,
+                           single_record_holder_get_values(record_holder)));
     CATCH(error, {
       item_iterator_destroy(it);
-      record_destroy(record);
+      record_group_destroy(record_group);
       THROW(error);
     })
 
     bool predicate_res = false;
-    TRY(predicate_apply(predicate, record, &predicate_res));
+    TRY(predicate_apply(predicate,
+                        single_record_holder_get_values(record_holder),
+                        &predicate_res));
     CATCH(error, {
       item_iterator_destroy(it);
-      record_destroy(record);
+      record_group_destroy(record_group);
       THROW(error);
     })
     if (predicate_res)
       item_iterator_delete_item(it);
-    record_clear(record);
+    record_group_clear(record_group);
   }
 
   item_iterator_destroy(it);
@@ -381,27 +356,30 @@ result_t table_manager_create_table(struct table_manager *self,
 
   // try to find a table with requested name
   struct predicate *table_name_equal = predicate_of(
-      column_value(TABLE_DATA_TABLE_COLUMN_TABLE_NAME, COLUMN_TYPE_STRING),
-      literal(schema->table_name), EQ);
+      column_value(TABLE_DATA_TABLE_COLUMN_TABLE_NAME(), COLUMN_TYPE_STRING),
+      literal(table_schema_get_name(schema)), EQ);
 
-  struct record *existing_table_data_record = NULL;
+  bool does_table_exist = true;
+  struct single_record_holder *existing_table_data_record = NULL;
   TRY(find_first_maybe_delete(self, self->table_data_table, table_name_equal,
                               false, &existing_table_data_record));
   CATCH(error, {
-    // if we encounter any error but NO_RECORD_FOUND, propagate it
+    // if we encounter any error but NO_RECORD_FOUND, propagate item_it
     // otherwise everything is good
     if (!(strcmp(error_get_type(error), ERROR_TYPE) == 0 &&
           error_get_code(error).bytes == NO_RECORD_FOUND)) {
       predicate_destroy(table_name_equal);
       THROW(error);
+    } else {
+      does_table_exist = false;
     }
     error_destroy(error);
   })
   predicate_destroy(table_name_equal);
 
   // if a table with the same name already exists throw error
-  if (existing_table_data_record != NULL) {
-    record_destroy(existing_table_data_record);
+  if (does_table_exist) {
+    single_record_holder_destroy(existing_table_data_record);
     THROW(error_self(TABLE_ALREADY_EXISTS));
   }
 
@@ -416,21 +394,21 @@ result_t table_manager_create_table(struct table_manager *self,
   CATCH(error, THROW(error))
 
   // construct the table record
-  struct record *table_data_record = record_new();
-  record_ctor(table_data_record);
-  record_insert(table_data_record, TABLE_DATA_TABLE_COLUMN_TABLE_ID, table_id);
-  record_insert(table_data_record, TABLE_DATA_TABLE_COLUMN_TABLE_NAME,
-                table_schema_get_name(schema));
-  record_insert(table_data_record, TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID,
-                table_group.bytes);
+  struct record_group *table_data_group = record_group_new();
+  record_group_ctor(table_data_group, 1, self->table_data_table->table_schema);
+
+  record_group_insert(table_data_group, 4, COLUMN_VALUE(table_id),
+                      COLUMN_VALUE(table_schema_get_name(schema)),
+                      COLUMN_VALUE(table_group.bytes),
+                      COLUMN_VALUE(table_schema_get_column_amount(schema)));
 
   // save table record to the tables table
-  TRY(table_manager_insert(self, self->table_data_table, table_data_record));
+  TRY(table_manager_insert(self, self->table_data_table, table_data_group));
   CATCH(error, {
-    record_destroy(table_data_record);
+    record_group_destroy(table_data_group);
     THROW(error);
   })
-  record_destroy(table_data_record);
+  record_group_destroy(table_data_group);
 
   // create a record for all columns of the table
   struct column_schema_iterator *column_it = table_schema_get_columns(schema);
@@ -444,108 +422,122 @@ result_t table_manager_create_table(struct table_manager *self,
     })
 
     // construct column record
-    struct record *column_record = record_new();
-    record_ctor(column_record);
-    record_insert(column_record, TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID, table_id);
-    record_insert(column_record, TABLE_COLUMNS_TABLE_COLUMN_NAME,
-                  column_schema->name);
-    record_insert(column_record, TABLE_COLUMNS_TABLE_COLUMN_TYPE,
-                  (uint64_t)column_schema->type);
+    struct record_group *column_data_group = record_group_new();
+    record_group_ctor(column_data_group, 1,
+                      self->table_columns_table->table_schema);
+    record_group_insert(
+        column_data_group, 3, COLUMN_VALUE(table_id),
+        COLUMN_VALUE(column_schema_get_name(column_schema)),
+        COLUMN_VALUE((uint64_t)column_schema_get_type(column_schema)));
 
-    // save it to columns table
-    TRY(table_manager_insert(self, self->table_columns_table, column_record));
+    // save item_it to columns table
+    TRY(table_manager_insert(self, self->table_columns_table,
+                             column_data_group));
     CATCH(error, {
       column_schema_iterator_destroy(column_it);
-      record_destroy(column_record);
+      record_group_destroy(column_data_group);
       THROW(error);
     })
-    record_destroy(column_record);
+    record_group_destroy(column_data_group);
   }
   column_schema_iterator_destroy(column_it);
 
   OK;
 }
 
-result_t table_manager_get_table(struct table_manager *self, char *table_name,
+result_t table_manager_get_table(struct table_manager *self, str_t table_name,
                                  struct table **result) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   // predicate to find table by name
   struct predicate *table_name_equal = predicate_of(
-      column_value(TABLE_DATA_TABLE_COLUMN_TABLE_NAME, COLUMN_TYPE_STRING),
+      column_value(TABLE_DATA_TABLE_COLUMN_TABLE_NAME(), COLUMN_TYPE_STRING),
       literal(table_name), EQ);
 
   // find table record
-  struct record *table_data_record = NULL;
+  struct single_record_holder *table_data_holder = NULL;
   TRY(find_first_maybe_delete(self, self->table_data_table, table_name_equal,
-                              false, &table_data_record));
+                              false, &table_data_holder));
   CATCH(error, {
     predicate_destroy(table_name_equal);
     THROW(error);
   })
   predicate_destroy(table_name_equal);
 
+  struct record *table_data =
+      single_record_holder_get_values(table_data_holder);
+
   // extract table id from the record
   uint64_t table_id = 0;
-  TRY(record_get(table_data_record, TABLE_DATA_TABLE_COLUMN_TABLE_ID,
-                 &table_id));
+  TRY(record_get(table_data, TABLE_DATA_TABLE_COLUMN_TABLE_ID(), &table_id));
   CATCH(error, {
-    record_destroy(table_data_record);
+    single_record_holder_destroy(table_data_holder);
     THROW(error);
   })
 
   // extract page group id from the record
   page_group_id_t table_page_group_id = PAGE_GROUP_ID_NULL;
-  TRY(record_get(table_data_record, TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID,
+  TRY(record_get(table_data, TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID(),
                  &table_page_group_id.bytes));
   CATCH(error, {
-    record_destroy(table_data_record);
+    single_record_holder_destroy(table_data_holder);
     THROW(error);
   })
+
+  // extract columns amount from the record
+  uint64_t columns_amount = 0;
+  TRY(record_get(table_data, TABLE_DATA_TABLE_COLUMN_COLUMNS_AMOUNT(),
+                 &columns_amount));
+  CATCH(error, {
+    single_record_holder_destroy(table_data_holder);
+    THROW(error);
+  })
+
   // don't need table record anymore
-  record_destroy(table_data_record);
+  single_record_holder_destroy(table_data_holder);
 
   // predicate to find columns by table id
   struct predicate *table_id_equal = predicate_of(
-      column_value(TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID, COLUMN_TYPE_UINT64),
+      column_value(TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID(), COLUMN_TYPE_UINT64),
       literal(table_id), EQ);
 
   // find the columns
-  struct record_iterator *columns_it = NULL;
+  struct record_view *columns_view = NULL;
   TRY(table_manager_find(self, self->table_columns_table, table_id_equal,
-                         &columns_it));
+                         &columns_view));
   CATCH(error, THROW(error))
 
   // start constructing table schema
   struct table_schema *schema = table_schema_new();
-  table_schema_ctor(schema, table_name, 10); // TODO fix this
-  struct record *column_record = NULL;
-  while (record_iterator_has_next(columns_it)) {
+  table_schema_ctor(schema, table_name, columns_amount);
+
+  struct record *column_data = NULL;
+  while (record_view_has_next(columns_view)) {
     // get column record
-    TRY(record_iterator_next(columns_it, &column_record));
+    TRY(record_view_next(columns_view, &column_data));
     CATCH(error, {
-      record_iterator_destroy(columns_it);
+      record_view_destroy(columns_view);
       table_schema_destroy(schema);
       THROW(error);
     })
 
     // extract column type from the record
     uint64_t column_type_index;
-    TRY(record_get(column_record, TABLE_COLUMNS_TABLE_COLUMN_TYPE,
+    TRY(record_get(column_data, TABLE_COLUMNS_TABLE_COLUMN_TYPE(),
                    &column_type_index));
     CATCH(error, {
-      record_iterator_destroy(columns_it);
+      record_view_destroy(columns_view);
       table_schema_destroy(schema);
       THROW(error);
     })
     column_type_t column_type = column_type_index;
 
     // extract column name from the record
-    char *column_name = NULL;
-    TRY(record_get(column_record, TABLE_COLUMNS_TABLE_COLUMN_NAME,
+    str_t column_name;
+    TRY(record_get(column_data, TABLE_COLUMNS_TABLE_COLUMN_NAME(),
                    &column_name));
     CATCH(error, {
-      record_iterator_destroy(columns_it);
+      record_view_destroy(columns_view);
       table_schema_destroy(schema);
       THROW(error);
     })
@@ -553,50 +545,52 @@ result_t table_manager_get_table(struct table_manager *self, char *table_name,
     // add column data to the schema
     table_schema_add_column(schema, column_name, column_type);
   }
-  record_iterator_destroy(columns_it);
+  record_view_destroy(columns_view);
 
   // finally construct table struct
-  struct table *table = malloc(sizeof(struct table));
-  table->table_schema = schema;
-  table->page_group_id = table_page_group_id;
-  *result = table;
+  //  struct table *table = malloc(sizeof(struct table));
+  //  table->table_schema = schema;
+  //  table->page_group_id = table_page_group_id;
+  //  *result = table;
+  *result = table_new();
+  table_ctor(*result, schema, table_page_group_id);
   OK;
 }
 
 result_t table_manager_drop_table(struct table_manager *self,
-                                  char *table_name) {
+                                  str_t table_name) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   struct predicate *table_name_equal = predicate_of(
-      column_value(TABLE_DATA_TABLE_COLUMN_TABLE_NAME, COLUMN_TYPE_STRING),
+      column_value(TABLE_DATA_TABLE_COLUMN_TABLE_NAME(), COLUMN_TYPE_STRING),
       literal(table_name), EQ);
 
-  struct record *table_data_record = NULL;
+  struct single_record_holder *table_data_holder = NULL;
   TRY(find_first_maybe_delete(self, self->table_data_table, table_name_equal,
-                              true, &table_data_record));
+                              true, &table_data_holder));
   CATCH(error, THROW(error))
 
+  struct record *table_data =
+      single_record_holder_get_values(table_data_holder);
+
   uint64_t table_id = 0;
-  TRY(record_get(table_data_record, TABLE_DATA_TABLE_COLUMN_TABLE_ID,
-                 &table_id));
+  TRY(record_get(table_data, TABLE_DATA_TABLE_COLUMN_TABLE_ID(), &table_id));
   CATCH(error, {
-    record_destroy(table_data_record);
+    single_record_holder_destroy(table_data_holder);
     THROW(error);
   })
 
   page_group_id_t group_id = PAGE_GROUP_ID_NULL;
-  TRY(record_get_uint64(table_data_record,
-                        TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID,
-                        &group_id.bytes));
+  TRY(record_get(table_data, TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID(),
+                 &group_id.bytes));
   CATCH(error, {
-    record_destroy(table_data_record);
-
+    single_record_holder_destroy(table_data_holder);
     THROW(error);
   })
-  record_destroy(table_data_record);
+  single_record_holder_destroy(table_data_holder);
 
   struct predicate *column_delete = predicate_of(
-      column_value(TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID, COLUMN_TYPE_UINT64),
+      column_value(TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID(), COLUMN_TYPE_UINT64),
       literal(table_id), EQ);
 
   TRY(table_manager_delete(self, self->table_columns_table, column_delete));

@@ -15,8 +15,8 @@ void queue_ctor_with_params(struct queue *self, size_t entry_size,
                             void (*entry_destroy_impl)(void *entry)) {
   self->entry_size = entry_size;
   self->node_entries_amount = node_entries_amount;
-  self->size = 0;
   self->entry_destroy_impl = entry_destroy_impl;
+  self->size = 0;
   self->first_node = NULL;
   self->last_node = NULL;
 }
@@ -87,8 +87,7 @@ result_t queue_get(struct queue *self, size_t index, void **entry) {
   *entry = node->contents + entry_index * self->entry_size;
   OK;
 }
-
-void queue_destroy(struct queue *self) {
+void queue_clear(struct queue *self) {
   struct queue_node *node = self->first_node;
   while (node != NULL) {
     struct queue_node *next_node = node->next;
@@ -98,6 +97,12 @@ void queue_destroy(struct queue *self) {
     free(node);
     node = next_node;
   }
+  self->size = 0;
+  self->first_node = NULL;
+  self->last_node = NULL;
+}
+void queue_destroy(struct queue *self) {
+  queue_clear(self);
   free(self);
 }
 

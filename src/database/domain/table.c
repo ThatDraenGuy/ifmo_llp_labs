@@ -13,6 +13,10 @@ void table_ctor(struct table *self, struct table_schema *schema,
   self->page_group_id = page_group_id;
 }
 
+struct table_schema *table_get_schema(struct table *self) {
+  return self->table_schema;
+}
+
 void table_destroy(struct table *self) {
   table_schema_destroy(self->table_schema);
   free(self);

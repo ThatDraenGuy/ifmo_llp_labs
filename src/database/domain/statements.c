@@ -23,7 +23,7 @@ static void
 create_table_statement_destroy(struct i_statement *create_table_statement) {
   struct create_table_statement *self =
       (struct create_table_statement *)create_table_statement;
-  table_schema_destroy(self->schema);
+  //  table_schema_destroy(self->schema);
   free(self);
 }
 
@@ -67,7 +67,7 @@ struct drop_table_statement *drop_table_statement_new() {
 }
 
 struct i_statement *drop_table_statement_ctor(struct drop_table_statement *self,
-                                              char *table_name) {
+                                              str_t table_name) {
   self->table_name = table_name;
   self->parent.execute_impl = drop_table_statement_execute;
   self->parent.destroy_impl = drop_table_statement_destroy;
@@ -84,13 +84,16 @@ query_statement_execute(struct i_statement *query_statement,
   TRY(table_manager_get_table(table_manager, self->from, &table));
   CATCH(error, THROW(error))
 
-  struct record_iterator *it = NULL;
+  struct record_view *view = NULL;
   TRY(table_manager_find(table_manager, table, predicate_clone(self->where),
-                         &it));
-  CATCH(error, { THROW(error); })
+                         &view));
+  CATCH(error, {
+    table_destroy(table);
+    THROW(error);
+  })
 
   statement_result->table = table;
-  statement_result->records = it;
+  statement_result->records = view;
   statement_result->type = STATEMENT_RESULT_RECORDS;
   OK;
 }
@@ -106,7 +109,7 @@ struct query_statement *query_statement_new() {
 }
 
 struct i_statement *query_statement_ctor(struct query_statement *self,
-                                         char *from, struct predicate *where) {
+                                         str_t from, struct predicate *where) {
   self->from = from;
   self->where = where;
 
@@ -139,7 +142,7 @@ insert_statement_execute(struct i_statement *insert_statement,
 
 static void insert_statement_destroy(struct i_statement *insert_statement) {
   struct insert_statement *self = (struct insert_statement *)insert_statement;
-  record_destroy(self->values);
+  record_group_destroy(self->values);
   free(self);
 }
 
@@ -148,7 +151,8 @@ struct insert_statement *insert_statement_new() {
 }
 
 struct i_statement *insert_statement_ctor(struct insert_statement *self,
-                                          char *into, struct record *values) {
+                                          str_t into,
+                                          struct record_group *values) {
   self->into = into;
   self->values = values;
 

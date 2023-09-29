@@ -9,38 +9,50 @@
 
 #define ERROR_SOURCE "RECORD_PRINTER"
 
+result_t schema_print(struct table_schema *schema) {
+  ASSERT_NOT_NULL(schema, ERROR_SOURCE);
+
+  printf("%s\n", str_get_c_string(table_schema_get_name(schema)));
+
+  struct column_schema_iterator *it = table_schema_get_columns(schema);
+  while (column_schema_iterator_has_next(it)) {
+    struct column_schema *column_schema = NULL;
+    column_schema_iterator_next(it, &column_schema);
+
+    printf("%s\t", str_get_c_string(column_schema_get_name(column_schema)));
+  }
+  column_schema_iterator_destroy(it);
+  printf("\n");
+  OK;
+}
+
 result_t record_print(struct record *record) {
   ASSERT_NOT_NULL(record, ERROR_SOURCE);
-  struct queue_iterator *it = queue_get_entries(record->entries);
 
-  while (queue_iterator_has_next(it)) {
-    struct record_entry *entry = NULL;
-    TRY(queue_iterator_next(it, (void **)&entry));
-    CATCH(error, {
-      queue_iterator_destroy(it);
-      THROW(error);
-    })
+  for (size_t index = 0; index < record->column_schema_group->columns_amount;
+       index++) {
+    struct column_schema *schema = record->column_schema_group->schemas[index];
+    column_value_t value = record->values[index];
 
-    printf("%s\t", entry->schema.name);
-    switch (entry->schema.type) {
+    //    printf("%s\t", str_get_c_string(column_schema_get_name(schema)));
+    switch (column_schema_get_type(schema)) {
     case COLUMN_TYPE_INT32:
-      printf("INT32\t%d\n", entry->value.int32_value);
+      printf("%d\t\t\t", value.int32_value);
       break;
     case COLUMN_TYPE_UINT64:
-      printf("UINT64\t%lu\n", entry->value.uint64_value);
+      printf("%lu\t\t\t", value.uint64_value);
       break;
     case COLUMN_TYPE_FLOAT:
-      printf("FLOAT\t%f\n", entry->value.float_value);
+      printf("%f\t\t\t", value.float_value);
       break;
     case COLUMN_TYPE_STRING:
-      printf("STRING\t%s\n", entry->value.string_value);
+      printf("%s\t\t\t", str_get_c_string(string_as_str(value.string_value)));
       break;
     case COLUMN_TYPE_BOOL:
-      printf("BOOL\t%d\n", entry->value.bool_value);
+      printf("%d\t\t\t", value.bool_value);
       break;
     }
   }
   printf("\n");
-  queue_iterator_destroy(it);
   OK;
 }

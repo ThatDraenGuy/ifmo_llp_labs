@@ -5,7 +5,6 @@
 #include "private/database/domain/predicate.h"
 #include "public/error/errors_common.h"
 #include <malloc.h>
-#include <string.h>
 
 #define ERROR_SOURCE "PREDICATE"
 #define ERROR_TYPE "PREDICATE_ERROR"
@@ -23,6 +22,8 @@ static void
 literal_predicate_value_destroy(struct predicate_value *predicate_value) {
   struct literal_predicate_value *self =
       (struct literal_predicate_value *)predicate_value;
+  if (self->parent.type == COLUMN_TYPE_STRING)
+    string_destroy(self->value.string_value);
   free(self);
 }
 
@@ -68,15 +69,19 @@ static struct predicate_value *literal_new(column_value_t value,
 
 LITERAL_IMPL(uint64_t, uint64, COLUMN_TYPE_UINT64);
 LITERAL_IMPL(int32_t, int32, COLUMN_TYPE_INT32);
-LITERAL_IMPL(char *, string, COLUMN_TYPE_STRING);
 LITERAL_IMPL(bool, bool, COLUMN_TYPE_BOOL);
 LITERAL_IMPL(float, float, COLUMN_TYPE_FLOAT);
+
+struct predicate_value *literal_string(str_t value) {
+  column_value_t column_value =
+      (column_value_t){.string_value = str_into(value)};
+  return literal_new(column_value, COLUMN_TYPE_STRING);
+}
 
 static void
 column_predicate_value_destroy(struct predicate_value *predicate_value) {
   struct column_predicate_value *self =
       (struct column_predicate_value *)predicate_value;
-  free(self->column_name);
   free(self);
 }
 
@@ -98,13 +103,12 @@ column_predicate_value_get_value(struct predicate_value *predicate_value,
   return record_get_value(record, self->column_name, result);
 }
 
-struct predicate_value *column_value(char *column_name,
+struct predicate_value *column_value(str_t column_name,
                                      column_type_t column_type) {
   struct column_predicate_value *predicate_value =
       malloc(sizeof(struct column_predicate_value));
 
-  predicate_value->column_name = malloc(strlen(column_name) + 1);
-  strcpy(predicate_value->column_name, column_name);
+  predicate_value->column_name = column_name;
 
   predicate_value->parent.type = column_type;
   predicate_value->parent.get_value_impl = column_predicate_value_get_value;
@@ -165,32 +169,32 @@ compare_number_impl(int32_t, int32);
 compare_number_impl(float, float); // TODO maybe redo
 compare_number_impl(bool, bool);
 
-static result_t compare_string(char *first, char *second,
+static result_t compare_string(str_t first, str_t second,
                                comparison_operator_t comparison_operator,
                                bool *result) {
   switch (comparison_operator) {
   case EQ: {
-    *result = strcmp(first, second) == 0;
+    *result = str_compare(first, second) == 0;
     break;
   }
   case NEQ: {
-    *result = strcmp(first, second) != 0;
+    *result = str_compare(first, second) != 0;
     break;
   }
   case LESS: {
-    *result = strcmp(first, second) < 0;
+    *result = str_compare(first, second) < 0;
     break;
   }
   case LEQ: {
-    *result = strcmp(first, second) <= 0;
+    *result = str_compare(first, second) <= 0;
     break;
   }
   case GREATER: {
-    *result = strcmp(first, second) > 0;
+    *result = str_compare(first, second) > 0;
     break;
   }
   case GEQ: {
-    *result = strcmp(first, second) >= 0;
+    *result = str_compare(first, second) >= 0;
     break;
   }
   }
@@ -228,7 +232,8 @@ static result_t predicate_of_impl_apply(struct predicate *predicate,
     return compare_bool(first_value.bool_value, second_value.bool_value,
                         self->comparison_operator, result);
   case COLUMN_TYPE_STRING:
-    return compare_string(first_value.string_value, second_value.string_value,
+    return compare_string(string_as_str(first_value.string_value),
+                          string_as_str(second_value.string_value),
                           self->comparison_operator, result);
   }
 }
@@ -333,7 +338,7 @@ predicate_logical_impl_new(struct predicate *first, struct predicate *second,
       malloc(sizeof(struct predicate_logical_impl));
   predicate->first = first;
   predicate->second = second;
-  predicate->logical_operator = AND;
+  predicate->logical_operator = logical_operator;
 
   predicate->parent.apply_impl = predicate_logical_impl_apply;
   predicate->parent.clone_impl = predicate_logical_impl_clone;

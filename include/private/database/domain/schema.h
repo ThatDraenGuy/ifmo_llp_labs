@@ -6,23 +6,23 @@
 #define LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_SCHEMA_H
 
 #include "public/database/domain/schema.h"
+#include "public/util/string.h"
 
 struct column_schema {
-  char *name;
+  string_t name;
+  str_t table_name;
   column_type_t type;
 };
 
 struct column_schema_iterator {
   size_t current_index;
-  size_t column_amount;
-  struct column_schema *columns;
+  struct column_schema_group *column_schema_group;
 };
 
 struct table_schema {
-  char *table_name;
-  size_t column_amount;
+  string_t table_name;
   size_t current_column_index;
-  struct column_schema *columns;
+  struct column_schema_group column_schema_group;
 };
 
 #endif // LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_SCHEMA_H

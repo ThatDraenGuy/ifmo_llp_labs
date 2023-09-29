@@ -5,7 +5,7 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_PREDICATE_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_PREDICATE_H
 
-#include "record.h"
+#include "record_group.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -15,7 +15,7 @@ struct predicate_value;
 
 struct predicate_value *literal_uint64(uint64_t value);
 struct predicate_value *literal_int32(int32_t value);
-struct predicate_value *literal_string(char *value);
+struct predicate_value *literal_string(str_t value);
 struct predicate_value *literal_bool(bool value);
 struct predicate_value *literal_float(float value);
 
@@ -23,11 +23,11 @@ struct predicate_value *literal_float(float value);
   _Generic(Value,                                                              \
       uint64_t: literal_uint64,                                                \
       int32_t: literal_int32,                                                  \
-      char *: literal_string,                                                  \
+      str_t: literal_string,                                                   \
       bool: literal_bool,                                                      \
       float: literal_float)(Value)
 
-struct predicate_value *column_value(char *column_name,
+struct predicate_value *column_value(str_t column_name,
                                      column_type_t column_type);
 
 struct predicate;

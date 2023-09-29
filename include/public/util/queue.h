@@ -22,6 +22,7 @@ size_t queue_size(struct queue *self);
 void *queue_push_back(struct queue *self, void *entry);
 result_t queue_get(struct queue *self, size_t index, void **entry);
 
+void queue_clear(struct queue *self);
 void queue_destroy(struct queue *self);
 
 struct queue_iterator;

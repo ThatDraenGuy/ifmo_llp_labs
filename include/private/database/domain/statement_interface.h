@@ -18,7 +18,7 @@ struct statement_result {
   statement_result_type_t type;
   struct table *table;
   union {
-    struct record_iterator *records;
+    struct record_view *records;
   };
 };
 

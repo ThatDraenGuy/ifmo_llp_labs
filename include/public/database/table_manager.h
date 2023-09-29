@@ -6,8 +6,8 @@
 #define LLP_LAB_INCLUDE_PUBLIC_STORAGE_TABLE_MANAGER_H
 
 #include "domain/predicate.h"
-#include "domain/record.h"
-#include "domain/record_iterator.h"
+#include "domain/record_group.h"
+#include "domain/record_view.h"
 #include "domain/schema.h"
 #include "domain/table.h"
 #include "public/util/result.h"
@@ -21,23 +21,23 @@ result_t table_manager_ctor(struct table_manager *self, char *file_name);
 result_t table_manager_create_table(struct table_manager *self,
                                     struct table_schema *schema);
 
-result_t table_manager_get_table(struct table_manager *self, char *table_name,
+result_t table_manager_get_table(struct table_manager *self, str_t table_name,
                                  struct table **result);
 
-result_t table_manager_drop_table(struct table_manager *self, char *table_name);
+result_t table_manager_drop_table(struct table_manager *self, str_t table_name);
 
 result_t
 table_manager_find(struct table_manager *self, struct table *table,
                    struct predicate *predicate,
-                   struct record_iterator **result); // TODO type shenanigans
+                            struct record_view **result);
 
 result_t table_manager_find_first(struct table_manager *self,
                                   struct table *table,
                                   struct predicate *predicate,
-                                  struct record **result);
+                                  struct record_group **result);
 
 result_t table_manager_insert(struct table_manager *self, struct table *table,
-                              struct record *record);
+                              struct record_group *records);
 
 result_t table_manager_update(struct table_manager *self, struct table *table,
                               struct predicate *predicate,

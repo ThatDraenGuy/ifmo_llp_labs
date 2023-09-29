@@ -1,19 +1,17 @@
 #include "public/prelude.h"
 #include <stdio.h>
 
-int create_and_insert() {
-  struct database_manager *database_manager = database_manager_new();
-  TRY(database_manager_ctor(database_manager, "test_file"));
-  CATCH(error, {
-    handle_error(error);
-    return 1;
-  })
+STR(TEST_TABLE_NAME, "TEST_TABLE")
+STR(TEST_INT_COLUMN, "TEST_INT")
+STR(TEST_BOOL_COLUMN, "TEST_BOOL")
+STR(TEST_FLOAT_COLUMN, "TEST_FLOAT")
 
+int create_and_insert(struct database_manager *database_manager) {
   struct table_schema *schema = table_schema_new();
-  table_schema_ctor(schema, "TEST_TABLE", 3);
-  table_schema_add_column(schema, "TEST_INT", COLUMN_TYPE_INT32);
-  table_schema_add_column(schema, "TEST_BOOL", COLUMN_TYPE_BOOL);
-  table_schema_add_column(schema, "TEST_FLOAT", COLUMN_TYPE_FLOAT);
+  table_schema_ctor(schema, TEST_TABLE_NAME(), 3);
+  table_schema_add_column(schema, TEST_INT_COLUMN(), COLUMN_TYPE_INT32);
+  table_schema_add_column(schema, TEST_BOOL_COLUMN(), COLUMN_TYPE_BOOL);
+  table_schema_add_column(schema, TEST_FLOAT_COLUMN(), COLUMN_TYPE_FLOAT);
 
   struct i_statement *create_table =
       create_table_statement_ctor(create_table_statement_new(), schema);
@@ -22,80 +20,70 @@ int create_and_insert() {
   TRY(database_manager_execute_statement(database_manager, create_table,
                                          create_table_result));
   CATCH(error, {
-    database_manager_destroy(database_manager);
     statement_destroy(create_table);
     statement_result_destroy(create_table_result);
+    table_schema_destroy(schema);
     handle_error(error);
     return 1;
   })
   statement_destroy(create_table);
   statement_result_destroy(create_table_result);
 
-  struct record *record = record_new();
-  record_ctor(record);
-  struct i_statement *insert =
-      insert_statement_ctor(insert_statement_new(), "TEST_TABLE", record);
-  struct statement_result *insert_result = statement_result_new();
-
+  struct record_group *record_group = record_group_new();
+  record_group_ctor(record_group, 1, schema);
   for (int32_t i = 0; i < 10; i++) {
-    float val = (float)i / 0.17f;
-    record_insert(record, "TEST_INT", i);
-    record_insert(record, "TEST_BOOL", (bool)(i % 3 == 0));
-    record_insert(record, "TEST_FLOAT", val);
-
-    TRY(database_manager_execute_statement(database_manager, insert,
-                                           insert_result));
-    CATCH(error, {
-      database_manager_destroy(database_manager);
-      statement_destroy(insert);
-      statement_result_destroy(insert_result);
-      handle_error(error);
-      return 1;
-    })
-
-    record_clear(record);
-    statement_result_clear(insert_result);
+    record_group_insert(record_group, 3, COLUMN_VALUE(i),
+                        COLUMN_VALUE((bool)(i % 3 == 0)),
+                        COLUMN_VALUE((float)i / 3.f));
   }
+
+  struct i_statement *insert = insert_statement_ctor(
+      insert_statement_new(), TEST_TABLE_NAME(), record_group);
+  struct statement_result *insert_result = statement_result_new();
+  TRY(database_manager_execute_statement(database_manager, insert,
+                                         insert_result));
+  CATCH(error, {
+    statement_destroy(insert);
+    statement_result_destroy(insert_result);
+    table_schema_destroy(schema);
+    handle_error(error);
+    return 1;
+  })
+
   statement_destroy(insert);
   statement_result_destroy(insert_result);
-  database_manager_destroy(database_manager);
+  table_schema_destroy(schema);
 
   printf("done");
   return 0;
 }
 
-int query() {
-  struct database_manager *database_manager = database_manager_new();
-  TRY(database_manager_ctor(database_manager, "test_file"));
-  CATCH(error, {
-    handle_error(error);
-    return 1;
-  })
+int query(struct database_manager *database_manager) {
+  struct predicate *predicate =
+      predicate_of(column_value(TEST_BOOL_COLUMN(), COLUMN_TYPE_BOOL),
+                   literal((bool)false), EQ);
 
-  struct predicate *predicate = predicate_of(
-      column_value("TEST_BOOL", COLUMN_TYPE_BOOL), literal((bool)true), EQ);
   struct i_statement *query =
-      query_statement_ctor(query_statement_new(), "TEST_TABLE", predicate);
+      query_statement_ctor(query_statement_new(), TEST_TABLE_NAME(), predicate);
   struct statement_result *query_result = statement_result_new();
 
   TRY(database_manager_execute_statement(database_manager, query,
                                          query_result));
   CATCH(error, {
-    database_manager_destroy(database_manager);
     statement_destroy(query);
     statement_result_destroy(query_result);
     handle_error(error);
     return 1;
   })
 
-  struct record_iterator *it = statement_result_records(query_result);
+  struct record_view *view = statement_result_records(query_result);
   statement_destroy(query);
+  schema_print(record_view_get_schema(view));
 
   struct record *record = NULL;
-  while (record_iterator_has_next(it)) {
-    TRY(record_iterator_next(it, &record));
+  while (record_view_has_next(view)) {
+    TRY(record_view_next(view, &record));
     CATCH(error, {
-      database_manager_destroy(database_manager);
       statement_result_destroy(query_result);
       handle_error(error);
       return 1;
@@ -103,7 +91,6 @@ int query() {
 
     TRY(record_print(record));
     CATCH(error, {
-      database_manager_destroy(database_manager);
       statement_result_destroy(query_result);
       handle_error(error);
       return 1;
@@ -111,10 +98,21 @@ int query() {
   }
 
   statement_result_destroy(query_result);
-  database_manager_destroy(database_manager);
 
   printf("done");
   return 0;
 }
 
-int main() { return create_and_insert(); }
+int main() {
+  struct database_manager *database_manager = database_manager_new();
+  TRY(database_manager_ctor(database_manager, "test_file"));
+  CATCH(error, {
+    handle_error(error);
+    return 1;
+  })
+
+  int res = create_and_insert(database_manager);
+
+  database_manager_destroy(database_manager);
+  return res;
+}

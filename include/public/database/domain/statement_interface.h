@@ -6,13 +6,13 @@
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_STATEMENT_INTERFACE_H
 
 #include "predicate.h"
-#include "record_iterator.h"
+#include "record_view.h"
 #include <stddef.h>
 
 struct statement_result;
 struct statement_result *statement_result_new();
 void statement_result_clear(struct statement_result *self);
-struct record_iterator *statement_result_records(struct statement_result *self);
+struct record_view *statement_result_records(struct statement_result *self);
 void statement_result_destroy(struct statement_result *self);
 
 struct i_statement;

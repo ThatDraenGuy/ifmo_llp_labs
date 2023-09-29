@@ -7,6 +7,7 @@
 
 #include "record.h"
 
+result_t schema_print(struct table_schema *schema);
 result_t record_print(struct record *record);
 
 #endif // LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_RECORD_PRINTER_H
