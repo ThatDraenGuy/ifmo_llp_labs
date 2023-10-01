@@ -15,8 +15,8 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - { name: "Windows MSVC", os: windows-latest, cc: "clang", cxx: "clang", define: "WIN32" }
-          - { name: "Ubuntu gcc", os: ubuntu-latest, cc: "gcc", cxx: "g++", define: "LINUX" }
+          - { name: "Windows MSVC", os: windows-latest, cc: "clang", cxx: "clang", define: "WINDOWS=TRUE" }
+          - { name: "Ubuntu gcc", os: ubuntu-latest, cc: "gcc", cxx: "g++", define: "WINDOWS=FALSE" }
         
     steps:
       - uses: actions/checkout@v3
@@ -33,8 +33,7 @@ jobs:
           build-dir: ${{ runner.workspace }}/build
           cc: ${{ matrix.config.cc }}
           cxx: ${{ matrix.config.cxx }}
-          configure-options: -G Ninja
-          build-options: -D ${{ matrix.define }}
+          configure-options: -G Ninja -D ${{ matrix.define }}
           build-type: Release
           
       - name: Test
