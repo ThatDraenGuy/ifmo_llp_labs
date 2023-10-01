@@ -39,11 +39,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    
-    - name: Add clang path to $PATH env
-      shell: bash
-      if: runner.os == 'Windows'
-      run: echo "PATH=$PATH:C:\msys64\mingw64\bin" >> $GITHUB_ENV
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
