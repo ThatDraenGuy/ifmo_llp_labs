@@ -38,4 +38,4 @@ jobs:
           
       - name: Test
         working-directory: ${{ runner.workspace }}/build
-        run: ctest
+        run: ctest --output_on_failure
