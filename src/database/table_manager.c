@@ -12,7 +12,7 @@
 #include "public/database/record_serialization.h"
 #include "public/error/errors_common.h"
 #include <malloc.h>
-#include <memory.h>
+#include <string.h>
 
 #define ERROR_SOURCE "TABLE_MANAGER"
 #define ERROR_TYPE "TABLE_MANAGER_ERROR"
