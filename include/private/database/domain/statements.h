@@ -32,4 +32,17 @@ struct insert_statement {
   struct record_group *values;
 };
 
+struct update_statement {
+  struct i_statement parent;
+  str_t what;
+  struct record_update *set;
+  struct predicate *where;
+};
+
+struct delete_statement {
+  struct i_statement parent;
+  str_t from;
+  struct predicate *where;
+};
+
 #endif // LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_STATEMENTS_H

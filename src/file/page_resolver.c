@@ -35,6 +35,16 @@ void *page_resolver_get_application_header(struct page_resolver *self) {
 }
 
 result_t page_resolver_flush_application_header(struct page_resolver *self) {
+  // TODO remove debug
+  {
+    struct file_manager *test_file_manager = file_manager_new();
+    char str[16];
+    sprintf(str, "app_header");
+    file_manager_ctor(test_file_manager, str);
+    file_manager_write(test_file_manager, self->application_header_size, 0,
+                       self->application_header);
+    file_manager_destroy(test_file_manager);
+  }
   return file_manager_write(self->file_manager, self->application_header_size,
                             sizeof(struct file_header),
                             self->application_header);

@@ -86,6 +86,18 @@ void single_record_holder_ctor(struct single_record_holder *self,
   self->record = record_new(&self->column_schema_group);
 }
 
+void single_record_holder_ctor_from_columns(struct single_record_holder *self,
+                                            size_t columns_num,
+                                            struct column_schema **schemas) {
+  self->column_schema_group.columns_amount = columns_num;
+  self->column_schema_group.schemas = malloc(sizeof(void *) * columns_num);
+  for (size_t index = 0; index < columns_num; index++) {
+    self->column_schema_group.schemas[index] = schemas[index];
+  }
+
+  self->record = record_new(&self->column_schema_group);
+}
+
 struct record *single_record_holder_get(struct single_record_holder *self) {
   return self->record;
 }

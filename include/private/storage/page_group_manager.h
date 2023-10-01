@@ -17,6 +17,7 @@ struct __attribute__((packed)) application_header {
 };
 
 struct __attribute__((packed)) page_header {
+  page_id_t previous;
   page_id_t next;
   uint8_t contents[];
 };

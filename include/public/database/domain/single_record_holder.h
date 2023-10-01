@@ -17,6 +17,9 @@ void single_record_holder_ctor_with_joins(struct single_record_holder *self,
                                           struct table *main_table,
                                           size_t joins_num,
                                           struct table **join_tables);
+void single_record_holder_ctor_from_columns(struct single_record_holder *self,
+                                            size_t columns_num,
+                                            struct column_schema **schemas);
 struct record *single_record_holder_get(struct single_record_holder *self);
 void single_record_holder_clear(struct single_record_holder *self,
                                 size_t first_column, size_t last_column);

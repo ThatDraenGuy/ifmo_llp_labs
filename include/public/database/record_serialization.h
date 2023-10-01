@@ -10,6 +10,7 @@
 #include "public/storage/domain/item.h"
 #include "public/util/result.h"
 
+void record_serialize_into(struct record *record, item_t target);
 item_t record_serialize(struct record *record);
 result_t record_deserialize(item_t item, struct record *target,
                             size_t start_column_index, size_t end_column_index);

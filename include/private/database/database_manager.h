@@ -10,6 +10,8 @@
 
 struct database_manager {
   struct table_manager *table_manager;
+  struct i_statement *current_statement;
+  struct statement_result *current_result;
 };
 
 #endif // LLP_LAB_INCLUDE_PRIVATE_DATABASE_DATABASE_MANAGER_H

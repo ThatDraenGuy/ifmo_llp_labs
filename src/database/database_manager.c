@@ -20,20 +20,39 @@ result_t database_manager_ctor(struct database_manager *self, char *file_name) {
   TRY(table_manager_ctor(self->table_manager, file_name));
   CATCH(error, THROW(error))
 
+  self->current_result = NULL;
+  self->current_statement = NULL;
   OK;
 }
 
 result_t
 database_manager_execute_statement(struct database_manager *self,
                                    struct i_statement *statement,
-                                   struct statement_result *statement_result) {
+                                   struct statement_result **statement_result) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
   ASSERT_NOT_NULL(statement, ERROR_SOURCE);
+  if (self->current_statement != NULL) {
+    database_manager_finish_statement(self);
+  }
+
+  self->current_statement = statement;
+  self->current_result = statement_result_new();
+  *statement_result = self->current_result;
   return statement->execute_impl(statement, self->table_manager,
-                                 statement_result);
+                                 self->current_result);
+}
+
+void database_manager_finish_statement(struct database_manager *self) {
+  if (self->current_statement != NULL) {
+    statement_destroy(self->current_statement);
+    statement_result_destroy(self->current_result);
+    self->current_result = NULL;
+    self->current_statement = NULL;
+  }
 }
 
 void database_manager_destroy(struct database_manager *self) {
+  database_manager_finish_statement(self);
   table_manager_destroy(self->table_manager);
   free(self);
 }

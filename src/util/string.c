@@ -61,4 +61,8 @@ void string_pack(string_t self, void *target) {
   memcpy(target, string_as_str(self), string_pack_size(self));
 }
 
+string_t string_clone(string_t self) {
+  return string_new(self->data, self->size);
+}
+
 void string_destroy(string_t self) { free(self); }

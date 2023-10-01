@@ -3,6 +3,7 @@
 //
 
 #include "private/database/table_manager.h"
+#include "private/database/domain/record_update.h"
 #include "private/database/domain/record_view.h"
 #include "private/database/domain/schema.h"
 #include "private/database/domain/table.h"
@@ -63,7 +64,8 @@ static result_t initialize_meta_page(struct table_manager *self,
 
   item_t item =
       (item_t){.size = sizeof(struct meta_contents), .data = meta_contents};
-  return page_data_manager_insert(self->page_data_manager, meta_group, item);
+  return page_data_manager_insert(self->page_data_manager, meta_group, item,
+                                  true);
 }
 
 static result_t get_data_from_meta_page(struct table_manager *self,
@@ -237,8 +239,21 @@ static result_t find_first_maybe_delete(struct table_manager *self,
       THROW(error);
     })
     if (predicate_result) {
-      if (do_delete)
-        item_iterator_delete_item(it);
+      if (do_delete) {
+        TRY(item_iterator_delete_item(it));
+        CATCH(error, {
+          item_iterator_destroy(it);
+          single_record_holder_destroy(*result);
+          THROW(error);
+        })
+        TRY(page_data_manager_vacuum(self->page_data_manager,
+                                     table->page_group_id));
+        CATCH(error, {
+          item_iterator_destroy(it);
+          single_record_holder_destroy(*result);
+          THROW(error);
+        })
+      }
       item_iterator_destroy(it);
       OK;
     }
@@ -337,6 +352,20 @@ result_t table_manager_find_one(struct table_manager *self, struct table *table,
   THROW(error_self(NO_RECORD_FOUND));
 }
 
+static result_t insert_record(struct table_manager *self, struct table *table,
+                              struct record *record, bool immediate) {
+
+  item_t item = record_serialize(record);
+  TRY(page_data_manager_insert(self->page_data_manager, table->page_group_id,
+                               item, immediate));
+  CATCH(error, {
+    item_destroy(item);
+    THROW(error);
+  })
+  item_destroy(item);
+  OK;
+}
+
 result_t table_manager_insert(struct table_manager *self, struct table *table,
                               struct record_group *records) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
@@ -350,17 +379,75 @@ result_t table_manager_insert(struct table_manager *self, struct table *table,
       THROW(error);
     })
 
-    item_t item = record_serialize(record); // TODO
-    TRY(page_data_manager_insert(self->page_data_manager, table->page_group_id,
-                                 item));
+    TRY(insert_record(self, table, record, true));
     CATCH(error, {
-      item_destroy(item);
       record_iterator_destroy(it);
       THROW(error);
     })
-    item_destroy(item);
   }
   record_iterator_destroy(it);
+
+  OK;
+}
+
+result_t table_manager_update(struct table_manager *self, struct table *table,
+                              struct predicate *predicate,
+                              struct record_update *record_update) {
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
+
+  struct item_iterator *it = page_data_manager_get_items(
+      self->page_data_manager, table->page_group_id);
+
+  struct single_record_holder *record_holder = single_record_holder_new();
+  single_record_holder_ctor(record_holder, 1, table_get_schema(table));
+  while (item_iterator_has_next(it)) {
+    single_record_holder_clear_all(record_holder);
+    item_t item = ITEM_NULL;
+    TRY(item_iterator_next(it, &item));
+    CATCH(error, {
+      item_iterator_destroy(it);
+      single_record_holder_destroy(record_holder);
+      THROW(error);
+    })
+
+    TRY(record_deserialize(
+        item, single_record_holder_get(record_holder), 0,
+        table_schema_get_column_amount(table_get_schema(table))));
+    CATCH(error, {
+      item_iterator_destroy(it);
+      single_record_holder_destroy(record_holder);
+      THROW(error);
+    })
+
+    bool predicate_res = false;
+    TRY(predicate_apply(predicate, single_record_holder_get(record_holder),
+                        &predicate_res));
+    CATCH(error, {
+      item_iterator_destroy(it);
+      single_record_holder_destroy(record_holder);
+      THROW(error);
+    })
+    if (predicate_res) {
+      TRY(record_update_apply(record_update,
+                              single_record_holder_get(record_holder)));
+      CATCH(error, {
+        item_iterator_destroy(it);
+        single_record_holder_destroy(record_holder);
+        THROW(error);
+      })
+
+      if (record_update->applicable_in_place) {
+        record_serialize_into(single_record_holder_get(record_holder), item);
+      } else {
+        item_iterator_delete_item(it);
+        insert_record(self, table, single_record_holder_get(record_holder),
+                      false);
+      }
+    }
+  }
+  single_record_holder_destroy(record_holder);
+  item_iterator_destroy(it);
+  page_data_manager_vacuum(self->page_data_manager, table->page_group_id);
 
   OK;
 }
@@ -372,25 +459,24 @@ result_t table_manager_delete(struct table_manager *self, struct table *table,
   struct item_iterator *it = page_data_manager_get_items(
       self->page_data_manager, table->page_group_id);
 
-  struct record_group *record_group = record_group_new();
-  record_group_ctor(record_group, 1, table->table_schema);
+  struct single_record_holder *record_holder = single_record_holder_new();
+  single_record_holder_ctor(record_holder, 1, table_get_schema(table));
   while (item_iterator_has_next(it)) {
+    single_record_holder_clear_all(record_holder);
     item_t item = ITEM_NULL;
     TRY(item_iterator_next(it, &item));
     CATCH(error, {
       item_iterator_destroy(it);
-      record_group_destroy(record_group);
+      single_record_holder_destroy(record_holder);
       THROW(error);
     })
 
-    struct single_record_holder *record_holder = single_record_holder_new();
-    single_record_holder_ctor(record_holder, 1, table_get_schema(table));
     TRY(record_deserialize(
         item, single_record_holder_get(record_holder), 0,
         table_schema_get_column_amount(table_get_schema(table))));
     CATCH(error, {
       item_iterator_destroy(it);
-      record_group_destroy(record_group);
+      single_record_holder_destroy(record_holder);
       THROW(error);
     })
 
@@ -399,16 +485,23 @@ result_t table_manager_delete(struct table_manager *self, struct table *table,
                         &predicate_res));
     CATCH(error, {
       item_iterator_destroy(it);
-      record_group_destroy(record_group);
+      single_record_holder_destroy(record_holder);
       THROW(error);
     })
-    if (predicate_res)
-      item_iterator_delete_item(it);
-    record_group_clear(record_group);
+    if (predicate_res) {
+      TRY(item_iterator_delete_item(it));
+      CATCH(error, {
+        item_iterator_destroy(it);
+        single_record_holder_destroy(record_holder);
+        THROW(error);
+      })
+    }
   }
 
+  single_record_holder_destroy(record_holder);
   item_iterator_destroy(it);
-  return page_data_manager_flush(self->page_data_manager, table->page_group_id);
+  return page_data_manager_vacuum(self->page_data_manager,
+                                  table->page_group_id);
 }
 
 result_t table_manager_create_table(struct table_manager *self,
@@ -623,19 +716,23 @@ result_t table_manager_drop_table(struct table_manager *self,
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   struct predicate *table_name_equal = predicate_of(
-      column_value(TABLE_COLUMNS_TABLE_NAME(),
+      column_value(TABLE_DATA_TABLE_NAME(),
                    TABLE_DATA_TABLE_COLUMN_TABLE_NAME(), COLUMN_TYPE_STRING),
       literal(table_name), EQ);
 
   struct single_record_holder *table_data_holder = NULL;
   TRY(find_first_maybe_delete(self, self->table_data_table, table_name_equal,
                               true, &table_data_holder));
-  CATCH(error, THROW(error))
+  CATCH(error, {
+    predicate_destroy(table_name_equal);
+    THROW(error);
+  })
+  predicate_destroy(table_name_equal);
 
   struct record *table_data = single_record_holder_get(table_data_holder);
 
   uint64_t table_id = 0;
-  TRY(record_get(table_data, TABLE_COLUMNS_TABLE_NAME(),
+  TRY(record_get(table_data, TABLE_DATA_TABLE_NAME(),
                  TABLE_DATA_TABLE_COLUMN_TABLE_ID(), &table_id));
   CATCH(error, {
     single_record_holder_destroy(table_data_holder);
@@ -643,7 +740,7 @@ result_t table_manager_drop_table(struct table_manager *self,
   })
 
   page_group_id_t group_id = PAGE_GROUP_ID_NULL;
-  TRY(record_get(table_data, TABLE_COLUMNS_TABLE_NAME(),
+  TRY(record_get(table_data, TABLE_DATA_TABLE_NAME(),
                  TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID(), &group_id.bytes));
   CATCH(error, {
     single_record_holder_destroy(table_data_holder);
@@ -661,6 +758,7 @@ result_t table_manager_drop_table(struct table_manager *self,
     predicate_destroy(column_delete);
     THROW(error);
   })
+  predicate_destroy(column_delete);
 
   TRY(page_data_manager_delete_group(self->page_data_manager, group_id));
   CATCH(error, THROW(error))

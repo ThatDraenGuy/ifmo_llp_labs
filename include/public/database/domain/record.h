@@ -9,6 +9,8 @@
 
 struct record;
 
+result_t record_set_value(struct record *self, str_t table_name,
+                          str_t column_name, column_value_t value);
 result_t record_get_value(struct record *self, str_t table_name,
                           str_t column_name, column_value_t *result);
 result_t record_get_int32(struct record *self, str_t table_name,
@@ -32,7 +34,4 @@ result_t record_get_bool(struct record *self, str_t table_name,
 
 void record_clear(struct record *self, size_t first_column, size_t last_column);
 void record_clear_all(struct record *self);
-
-struct record_update;
-
 #endif // LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_RECORD_H

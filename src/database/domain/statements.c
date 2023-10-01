@@ -24,17 +24,12 @@ static void
 create_table_statement_destroy(struct i_statement *create_table_statement) {
   struct create_table_statement *self =
       (struct create_table_statement *)create_table_statement;
-  //  table_schema_destroy(self->schema);
   free(self);
 }
 
-struct create_table_statement *create_table_statement_new() {
-  return malloc(sizeof(struct create_table_statement));
-}
-
-struct i_statement *
-create_table_statement_ctor(struct create_table_statement *self,
-                            struct table_schema *schema) {
+struct i_statement *create_table_statement_of(struct table_schema *schema) {
+  struct create_table_statement *self =
+      malloc(sizeof(struct create_table_statement));
   self->schema = schema;
 
   self->parent.execute_impl = create_table_statement_execute;
@@ -63,12 +58,9 @@ drop_table_statement_destroy(struct i_statement *drop_table_statement) {
   free(self);
 }
 
-struct drop_table_statement *drop_table_statement_new() {
-  return malloc(sizeof(struct drop_table_statement));
-}
-
-struct i_statement *drop_table_statement_ctor(struct drop_table_statement *self,
-                                              str_t table_name) {
+struct i_statement *drop_table_statement_of(str_t table_name) {
+  struct drop_table_statement *self =
+      malloc(sizeof(struct drop_table_statement));
   self->table_name = table_name;
   self->parent.execute_impl = drop_table_statement_execute;
   self->parent.destroy_impl = drop_table_statement_destroy;
@@ -139,13 +131,9 @@ void query_statement_destroy(struct i_statement *query_statement) {
   free(self);
 }
 
-struct query_statement *query_statement_new() {
-  return malloc(sizeof(struct query_statement));
-}
-
-struct i_statement *query_statement_ctor(struct query_statement *self,
-                                         str_t from, struct predicate *where,
-                                         size_t joins_num, ...) {
+struct i_statement *query_statement_of(str_t from, struct predicate *where,
+                                       size_t joins_num, ...) {
+  struct query_statement *self = malloc(sizeof(struct query_statement));
   self->from = from;
   self->where = where;
   self->joins_num = joins_num;
@@ -191,17 +179,96 @@ static void insert_statement_destroy(struct i_statement *insert_statement) {
   free(self);
 }
 
-struct insert_statement *insert_statement_new() {
-  return malloc(sizeof(struct insert_statement));
-}
-
-struct i_statement *insert_statement_ctor(struct insert_statement *self,
-                                          str_t into,
-                                          struct record_group *values) {
+struct i_statement *insert_statement_of(str_t into,
+                                        struct record_group *values) {
+  struct insert_statement *self = malloc(sizeof(struct insert_statement));
   self->into = into;
   self->values = values;
 
   self->parent.execute_impl = insert_statement_execute;
   self->parent.destroy_impl = insert_statement_destroy;
+  return (struct i_statement *)self;
+}
+
+static result_t
+update_statement_execute(struct i_statement *update_statement,
+                         struct table_manager *table_manager,
+                         struct statement_result *statement_result) {
+  struct update_statement *self = (struct update_statement *)update_statement;
+
+  struct table *table = NULL;
+  TRY(table_manager_get_table(table_manager, self->what, &table));
+  CATCH(error, THROW(error))
+
+  TRY(table_manager_update(table_manager, table, self->where, self->set));
+  CATCH(error, {
+    table_destroy(table);
+    THROW(error);
+  })
+
+  table_destroy(table);
+  statement_result->type = STATEMENT_RESULT_NONE;
+  OK;
+}
+
+static void update_statement_destroy(struct i_statement *update_statement) {
+  struct update_statement *self = (struct update_statement *)update_statement;
+  predicate_destroy(self->where);
+  record_update_destroy(self->set);
+  free(self);
+}
+
+struct i_statement *update_statement_of(str_t what, struct record_update *set,
+                                        struct predicate *where) {
+  struct update_statement *self = malloc(sizeof(struct update_statement));
+  self->what = what;
+  self->set = set;
+  self->where = where;
+
+  self->parent.execute_impl = update_statement_execute;
+  self->parent.destroy_impl = update_statement_destroy;
+  return (struct i_statement *)self;
+}
+
+static result_t
+delete_statement_execute(struct i_statement *delete_statement,
+                         struct table_manager *table_manager,
+                         struct statement_result *statement_result) {
+  struct delete_statement *self = (struct delete_statement *)delete_statement;
+
+  struct table *table = NULL;
+  TRY(table_manager_get_table(table_manager, self->from, &table));
+  CATCH(error, THROW(error))
+
+  TRY(table_manager_delete(table_manager, table, self->where));
+  CATCH(error, {
+    table_destroy(table);
+    THROW(error);
+  })
+
+  TRY(table_manager_flush(table_manager, table));
+  CATCH(error, {
+    table_destroy(table);
+    THROW(error);
+  })
+
+  table_destroy(table);
+  statement_result->type = STATEMENT_RESULT_NONE;
+  OK;
+}
+
+static void delete_statement_destroy(struct i_statement *delete_statement) {
+  struct delete_statement *self = (struct delete_statement *)delete_statement;
+  predicate_destroy(self->where);
+  free(self);
+}
+
+struct i_statement *delete_statement_of(str_t from, struct predicate *where) {
+  struct delete_statement *self = malloc(sizeof(struct delete_statement));
+  self->from = from;
+  self->where = where;
+
+  self->parent.execute_impl = delete_statement_execute;
+  self->parent.destroy_impl = delete_statement_destroy;
   return (struct i_statement *)self;
 }

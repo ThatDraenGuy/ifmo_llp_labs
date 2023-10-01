@@ -160,7 +160,7 @@ void predicate_destroy(struct predicate *self) { self->destroy_impl(self); }
       OK;                                                                      \
     }                                                                          \
     case GEQ: {                                                                \
-      *result - first >= second;                                               \
+      *result = first >= second;                                               \
       OK;                                                                      \
     }                                                                          \
     }                                                                          \

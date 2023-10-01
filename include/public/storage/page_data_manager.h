@@ -33,19 +33,21 @@ result_t page_data_manager_delete_group(struct page_data_manager *self,
                                         page_group_id_t page_group_id);
 
 result_t page_data_manager_insert(struct page_data_manager *self,
-                                  page_group_id_t page_group_id, item_t item);
+                                  page_group_id_t page_group_id, item_t item,
+                                  bool immediate);
 
 struct item_iterator *
 page_data_manager_get_items(struct page_data_manager *self,
                             page_group_id_t page_group_id);
-
+result_t page_data_manager_vacuum(struct page_data_manager *self,
+                                  page_group_id_t page_group_id);
 result_t page_data_manager_flush(struct page_data_manager *self,
                                  page_group_id_t page_group_id);
 void page_data_manager_destroy(struct page_data_manager *self);
 
 bool item_iterator_has_next(struct item_iterator *self);
 result_t item_iterator_next(struct item_iterator *self, item_t *result);
-void item_iterator_delete_item(struct item_iterator *self);
+result_t item_iterator_delete_item(struct item_iterator *self);
 void item_iterator_destroy(struct item_iterator *self);
 
 #endif // LLP_LAB_INCLUDE_PUBLIC_STORAGE_PAGE_DATA_MANAGER_H

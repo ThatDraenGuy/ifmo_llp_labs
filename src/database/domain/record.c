@@ -11,11 +11,24 @@
 enum error_code { NON_MATCHING_TYPE, COLUMN_NOT_FOUND };
 
 const char *const error_messages[] = {
-    [NON_MATCHING_TYPE] = "", [COLUMN_NOT_FOUND] = ""}; // TODO
+    [NON_MATCHING_TYPE] = "Requested column type differs from expected",
+    [COLUMN_NOT_FOUND] = "No such column"};
 
 static struct error *error_self(enum error_code error_code) {
   return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},
                    error_messages[error_code]);
+}
+
+static void clear_record_value(struct record *self, size_t index) {
+  column_value_t value = self->values[index];
+  struct column_schema *column_schema =
+      self->column_schema_group->schemas[index];
+
+  if (column_schema_get_type(column_schema) == COLUMN_TYPE_STRING &&
+      value.string_value != NULL) {
+    string_destroy(value.string_value);
+    value.string_value = NULL;
+  }
 }
 
 static result_t find_schema(struct column_schema_group *group, str_t table_name,
@@ -29,6 +42,26 @@ static result_t find_schema(struct column_schema_group *group, str_t table_name,
     }
   }
   THROW(error_self(COLUMN_NOT_FOUND));
+}
+result_t record_set_value(struct record *self, str_t table_name,
+                          str_t column_name, column_value_t value) {
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
+  size_t column_index = 0;
+  TRY(find_schema(self->column_schema_group, table_name, column_name,
+                  &column_index));
+  CATCH(error, THROW(error))
+
+  clear_record_value(self, column_index);
+
+  if (column_schema_get_type(
+          self->column_schema_group->schemas[column_index]) ==
+      COLUMN_TYPE_STRING) {
+    self->values[column_index].string_value = string_clone(value.string_value);
+  } else {
+    self->values[column_index] = value;
+  }
+
+  OK;
 }
 
 result_t record_get_value(struct record *self, str_t table_name,
@@ -68,15 +101,7 @@ RECORD_GET_IMPL(str_t, string, COLUMN_TYPE_STRING, string_as_str)
 void record_clear(struct record *self, size_t first_column,
                   size_t last_column) {
   for (size_t index = first_column; index < last_column; index++) {
-    column_value_t value = self->values[index];
-    struct column_schema *column_schema =
-        self->column_schema_group->schemas[index];
-
-    if (column_schema_get_type(column_schema) == COLUMN_TYPE_STRING &&
-        value.string_value != NULL) {
-      string_destroy(value.string_value);
-      value.string_value = NULL;
-    }
+    clear_record_value(self, index);
   }
 }
 void record_clear_all(struct record *self) {

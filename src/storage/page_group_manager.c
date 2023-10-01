@@ -24,6 +24,11 @@ result_t page_iterator_current(struct page_iterator *self, page_t *result) {
   result->data = page.data + sizeof(struct page_header);
   OK;
 }
+
+page_id_t page_iterator_current_id(struct page_iterator *self) {
+  return self->current_page_id;
+}
+
 result_t page_iterator_next(struct page_iterator *self, page_t *result) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
@@ -57,15 +62,37 @@ page_iterator_new(struct page_manager *page_manager,
 
 static result_t get_new_page(struct page_group_manager *self, page_t *result,
                              page_id_t *result_id) {
-  struct application_header *header =
+  struct application_header *app_header =
       page_manager_get_application_header(self->page_manager);
 
-  if (page_id_is_null(header->first_free_page))
+  // if no free pages - create new page and return it
+  if (page_id_is_null(app_header->first_free_page))
     return page_manager_create_page(self->page_manager, result, result_id);
 
-  // TODO alter first_free_page
-  *result_id = header->first_free_page;
-  return page_manager_get_page(self->page_manager, *result_id, result);
+  // otherwise get first free page
+  *result_id = app_header->first_free_page;
+  TRY(page_manager_get_page(self->page_manager, *result_id, result));
+  CATCH(error, THROW(error))
+
+  struct page_header *header = result->data;
+
+  // alter first_free_page pointer
+  app_header->first_free_page = header->next;
+  if (page_id_is_null(app_header->first_free_page)) {
+    // if first_free_page is now NULL (no more free pages)
+    // set to null last_free_page
+    app_header->last_free_page = PAGE_ID_NULL;
+  } else {
+    // otherwise set to null `previous` pointer in new first free page
+    page_t new_first_page = PAGE_NULL;
+    TRY(page_manager_get_page(self->page_manager, app_header->first_free_page,
+                              &new_first_page));
+    CATCH(error, THROW(error))
+    struct page_header *new_first_header = new_first_page.data;
+    new_first_header->previous = PAGE_ID_NULL;
+  }
+
+  return page_manager_flush_application_header(self->page_manager);
 }
 
 static result_t create_page(struct page_group_manager *self, page_t *result,
@@ -74,6 +101,7 @@ static result_t create_page(struct page_group_manager *self, page_t *result,
   CATCH(error, THROW(error))
 
   struct page_header *page_header = result->data;
+  page_header->previous = PAGE_ID_NULL;
   page_header->next = PAGE_ID_NULL;
 
   OK;
@@ -140,8 +168,9 @@ result_t page_group_manager_add_page(struct page_group_manager *self,
   CATCH(error, THROW(error))
   result->data = new_page.data + sizeof(struct page_header);
 
+  page_id_t old_last_page_id = it->current_page_id;
   page_t old_last_page = PAGE_NULL;
-  TRY(page_manager_get_page(self->page_manager, it->current_page_id,
+  TRY(page_manager_get_page(self->page_manager, old_last_page_id,
                             &old_last_page));
   CATCH(error, THROW(error))
 
@@ -149,10 +178,19 @@ result_t page_group_manager_add_page(struct page_group_manager *self,
   struct page_header *new_page_header = new_page.data;
   if (page_iterator_has_next(it)) {
     new_page_header->next = old_page_header->next;
+
+    page_t next_page = PAGE_NULL;
+    TRY(page_manager_get_page(self->page_manager, new_page_header->next,
+                              &next_page));
+    CATCH(error, THROW(error))
+
+    struct page_header *next_page_header = next_page.data;
+    next_page_header->previous = new_last_page_id;
   } else {
     new_page_header->next = PAGE_ID_NULL;
   }
   old_page_header->next = new_last_page_id;
+  new_page_header->previous = old_last_page_id;
 
   OK;
 }
@@ -170,44 +208,99 @@ result_t page_group_manager_create_group(struct page_group_manager *self,
   OK;
 }
 
-result_t page_group_manager_delete_group(struct page_group_manager *self,
-                                         page_group_id_t page_group_id) {
+static result_t page_group_manager_free_page(struct page_group_manager *self,
+                                             page_id_t page_id) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
-  page_id_t to_be_freed_page_id = (page_id_t){page_group_id.bytes};
 
   struct application_header *application_header =
       page_manager_get_application_header(self->page_manager);
 
-  page_t page = PAGE_NULL;
-  struct page_header *header = NULL;
-  if (page_id_is_null(application_header->last_free_page)) {
-    // initialize first_free_page and setup page & header to find last_free_page
-    application_header->first_free_page = to_be_freed_page_id;
+  // get current last free page
+  page_id_t old_last_page_id = application_header->last_free_page;
 
-    TRY(page_manager_get_page(self->page_manager, to_be_freed_page_id, &page));
+  // alter last free page pointer
+  application_header->last_free_page = page_id;
+  if (page_id_is_null(old_last_page_id)) {
+    // if there were no free page beforehand - set page to be first one
+    application_header->first_free_page = page_id;
+
+    page_t page = PAGE_NULL;
+    TRY(page_manager_get_page(self->page_manager, page_id, &page));
     CATCH(error, THROW(error))
 
-    header = page.data;
+    struct page_header *header = page.data;
+    header->previous = PAGE_ID_NULL;
+    header->next = PAGE_ID_NULL;
   } else {
-    // update next page in free page chain
-    TRY(page_manager_get_page(self->page_manager,
-                              application_header->last_free_page, &page));
+    // otherwise set `next` & `previous` pointers in old & new last pages
+    page_t old_last_page = PAGE_NULL;
+    TRY(page_manager_get_page(self->page_manager, old_last_page_id,
+                              &old_last_page));
     CATCH(error, THROW(error))
 
-    header = page.data;
-    header->next = to_be_freed_page_id;
+    struct page_header *old_last_header = old_last_page.data;
+    old_last_header->next = page_id;
+
+    page_t page = PAGE_NULL;
+    TRY(page_manager_get_page(self->page_manager, page_id, &page));
+    CATCH(error, THROW(error))
+
+    struct page_header *header = page.data;
+    header->previous = old_last_page_id;
+  }
+  OK;
+}
+
+result_t page_group_manager_free_page_current(struct page_group_manager *self,
+                                              struct page_iterator *it) {
+  page_id_t page_id = it->current_page_id;
+
+  page_t page = PAGE_NULL;
+  TRY(page_manager_get_page(self->page_manager, page_id, &page));
+  CATCH(error, THROW(error))
+
+  // get previous & next page ids
+  page_id_t prev_page_id = ((struct page_header *)page.data)->previous;
+  page_id_t next_page_id = ((struct page_header *)page.data)->next;
+
+  if (!page_id_is_null(prev_page_id)) {
+    // if previous page exists update its next page
+    page_t prev_page = PAGE_NULL;
+    TRY(page_manager_get_page(self->page_manager, prev_page_id, &prev_page));
+    CATCH(error, THROW(error))
+
+    ((struct page_header *)prev_page.data)->next = next_page_id;
+  }
+  if (!page_id_is_null(next_page_id)) {
+    // if next page exists update its previous page
+    page_t next_page = PAGE_NULL;
+    TRY(page_manager_get_page(self->page_manager, next_page_id, &next_page));
+    CATCH(error, THROW(error))
+
+    ((struct page_header *)next_page.data)->previous = prev_page_id;
   }
 
-  // update last_free_page field
-  page_id_t last_page_id = to_be_freed_page_id;
-  while (!page_id_is_null(header->next)) {
-    last_page_id = header->next;
-    TRY(page_manager_get_page(self->page_manager, header->next, &page));
+  return page_group_manager_free_page(self, it->current_page_id);
+}
+
+result_t page_group_manager_delete_group(struct page_group_manager *self,
+                                         page_group_id_t page_group_id) {
+  ASSERT_NOT_NULL(self, ERROR_SOURCE);
+
+  page_t page = PAGE_NULL;
+  struct page_header *header = NULL;
+  page_id_t current_page_id = (page_id_t){page_group_id.bytes};
+  // just free each page in the group one by one
+  while (!page_id_is_null(current_page_id)) {
+    TRY(page_manager_get_page(self->page_manager, current_page_id, &page));
     CATCH(error, THROW(error))
 
     header = page.data;
+    page_id_t next_page_id = header->next;
+    TRY(page_group_manager_free_page(self, current_page_id));
+    CATCH(error, THROW(error))
 
-    application_header->last_free_page = last_page_id;
+    current_page_id = next_page_id;
   }
 
   return page_manager_flush_application_header(self->page_manager);
@@ -231,4 +324,13 @@ struct page_iterator *
 page_group_manager_get_group(struct page_group_manager *self,
                              page_group_id_t page_group_id) {
   return page_iterator_new(self->page_manager, page_group_id);
+}
+
+result_t page_group_manager_get_page(struct page_group_manager *self,
+                                     page_id_t page_id, page_t *result) {
+  page_t page = PAGE_NULL;
+  TRY(page_manager_get_page(self->page_manager, page_id, &page));
+  CATCH(error, THROW(error))
+  result->data = page.data + sizeof(struct page_header);
+  OK;
 }

@@ -10,11 +10,18 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// struct item_iterator {
+//   struct page_iterator *page_iterator;
+//   bool is_empty;
+//   uint16_t next_item_index;
+// };
 struct item_iterator {
+  struct page_group_manager *page_group_manager;
   struct page_iterator *page_iterator;
   bool is_empty;
-  uint16_t next_item_index;
-  item_t current_item;
+  page_id_t current_item_page;
+  size_t current_item_index;
+  size_t next_item_index;
 };
 
 struct __attribute__((packed)) page_data_header {

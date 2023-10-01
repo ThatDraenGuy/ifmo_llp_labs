@@ -175,6 +175,18 @@ static void serialize_column(item_t item, size_t *item_offset,
   }
 }
 
+void record_serialize_into(struct record *record, item_t target) {
+  size_t columns_amount = record->column_schema_group->columns_amount;
+
+  size_t item_offset = 0;
+  for (size_t index = 0; index < columns_amount; index++) {
+    column_type_t type =
+        column_schema_get_type(record->column_schema_group->schemas[index]);
+    column_value_t value = record->values[index];
+    serialize_column(target, &item_offset, type, value);
+  }
+}
+
 item_t record_serialize(struct record *record) {
   size_t columns_amount = record->column_schema_group->columns_amount;
 
@@ -189,14 +201,7 @@ item_t record_serialize(struct record *record) {
   void *item_data = malloc(item_size);
   item_t item = (item_t){.size = item_size, .data = item_data};
 
-  size_t item_offset = 0;
-  for (size_t index = 0; index < columns_amount; index++) {
-    column_type_t type =
-        column_schema_get_type(record->column_schema_group->schemas[index]);
-    column_value_t value = record->values[index];
-    serialize_column(item, &item_offset, type, value);
-  }
-
+  record_serialize_into(record, item);
   return item;
 }
 
