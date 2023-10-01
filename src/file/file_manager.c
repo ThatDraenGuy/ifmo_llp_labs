@@ -9,7 +9,7 @@
 #include <malloc.h>
 #include <string.h>
 
-#ifdef WIN32
+#ifdef WINDOWS
 #include <io.h>
 #define F_OK 0
 #define access _access
