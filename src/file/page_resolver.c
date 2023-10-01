@@ -6,6 +6,7 @@
 #include "public/error/errors_common.h"
 #include <malloc.h>
 #include <memory.h>
+#include <stdio.h>
 
 #define ERROR_SOURCE "PAGE_RESOLVER"
 #define ERROR_TYPE "PAGE_RESOLVER_ERROR"
