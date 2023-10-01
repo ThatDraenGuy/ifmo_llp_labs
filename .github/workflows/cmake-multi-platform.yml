@@ -33,7 +33,7 @@ jobs:
           build-dir: ${{ runner.workspace }}/build
           cc: ${{ matrix.config.cc }}
           cxx: ${{ matrix.config.cxx }}
-          configure-options: -G Ninja -D ${{ matrix.define }}
+          configure-options: -G Ninja -D ${{ matrix.config.define }}
           build-type: Release
           
       - name: Test
