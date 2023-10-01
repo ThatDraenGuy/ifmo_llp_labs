@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.10)
 project(llp_lab C)
 
 set(CMAKE_C_STANDARD 11)
+
+enable_testing()
 
 #project targets
 set(PROJECT_LIB ${PROJECT_NAME}_lib)
@@ -24,7 +26,6 @@ target_link_libraries(${PROJECT_TEST} PRIVATE ${PROJECT_NAME}_lib)
 target_include_directories(${PROJECT_TEST} PRIVATE ${HEADERS_DIR})
 
 #test setup
-enable_testing()
 add_test(
         NAME test
         COMMAND $<TARGET_FILE:${PROJECT_TEST}>
@@ -35,5 +36,5 @@ IF (${WINDOWS})
     add_compile_definitions(WINDOWS)
     target_link_libraries(${PROJECT_TEST} PRIVATE clang_rt.asan_dynamic-x86_64 clang_rt.asan_dynamic_runtime_thunk-x86_64)
 ELSE ()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g")
+    #    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g")
 ENDIF ()

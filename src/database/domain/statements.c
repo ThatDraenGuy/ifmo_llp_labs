@@ -12,11 +12,11 @@ create_table_statement_execute(struct i_statement *create_table_statement,
                                struct statement_result *statement_result) {
   struct create_table_statement *self =
       (struct create_table_statement *)create_table_statement;
+  statement_result->type = STATEMENT_RESULT_NONE;
 
   TRY(table_manager_create_table(table_manager, self->schema));
   CATCH(error, THROW(error))
 
-  statement_result->type = STATEMENT_RESULT_NONE;
   OK;
 }
 
@@ -43,11 +43,11 @@ drop_table_statement_execute(struct i_statement *drop_table_statement,
                              struct statement_result *statement_result) {
   struct drop_table_statement *self =
       (struct drop_table_statement *)drop_table_statement;
+  statement_result->type = STATEMENT_RESULT_NONE;
 
   TRY(table_manager_drop_table(table_manager, self->table_name));
   CATCH(error, THROW(error))
 
-  statement_result->type = STATEMENT_RESULT_NONE;
   OK;
 }
 
@@ -72,6 +72,7 @@ query_statement_execute(struct i_statement *query_statement,
                         struct table_manager *table_manager,
                         struct statement_result *statement_result) {
   struct query_statement *self = (struct query_statement *)query_statement;
+  statement_result->type = STATEMENT_RESULT_RECORDS;
 
   struct table *main_table = NULL;
   TRY(table_manager_get_table(table_manager, self->from, &main_table));
@@ -117,7 +118,6 @@ query_statement_execute(struct i_statement *query_statement,
   statement_result->join_predicates = join_predicates;
   statement_result->joins_num = self->joins_num;
   statement_result->records = view;
-  statement_result->type = STATEMENT_RESULT_RECORDS;
   OK;
 }
 
@@ -157,6 +157,7 @@ insert_statement_execute(struct i_statement *insert_statement,
                          struct table_manager *table_manager,
                          struct statement_result *statement_result) {
   struct insert_statement *self = (struct insert_statement *)insert_statement;
+  statement_result->type = STATEMENT_RESULT_NONE;
 
   struct table *table = NULL;
   TRY(table_manager_get_table(table_manager, self->into, &table));
@@ -169,7 +170,6 @@ insert_statement_execute(struct i_statement *insert_statement,
   })
 
   table_destroy(table);
-  statement_result->type = STATEMENT_RESULT_NONE;
   OK;
 }
 
@@ -195,6 +195,7 @@ update_statement_execute(struct i_statement *update_statement,
                          struct table_manager *table_manager,
                          struct statement_result *statement_result) {
   struct update_statement *self = (struct update_statement *)update_statement;
+  statement_result->type = STATEMENT_RESULT_NONE;
 
   struct table *table = NULL;
   TRY(table_manager_get_table(table_manager, self->what, &table));
@@ -207,7 +208,6 @@ update_statement_execute(struct i_statement *update_statement,
   })
 
   table_destroy(table);
-  statement_result->type = STATEMENT_RESULT_NONE;
   OK;
 }
 
@@ -235,6 +235,7 @@ delete_statement_execute(struct i_statement *delete_statement,
                          struct table_manager *table_manager,
                          struct statement_result *statement_result) {
   struct delete_statement *self = (struct delete_statement *)delete_statement;
+  statement_result->type = STATEMENT_RESULT_NONE;
 
   struct table *table = NULL;
   TRY(table_manager_get_table(table_manager, self->from, &table));
@@ -253,7 +254,6 @@ delete_statement_execute(struct i_statement *delete_statement,
   })
 
   table_destroy(table);
-  statement_result->type = STATEMENT_RESULT_NONE;
   OK;
 }
 
