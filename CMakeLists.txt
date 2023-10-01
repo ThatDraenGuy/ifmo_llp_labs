@@ -16,3 +16,7 @@ add_executable(${PROJECT_NAME} ${TEST_SOURCES})
 target_sources(${PROJECT_NAME} PRIVATE ${SOURCES} PUBLIC ${HEADERS})
 
 add_library(${PROJECT_NAME}_lib ${SOURCES})
+
+IF (${WINDOWS})
+    add_compile_definitions(WINDOWS)
+ENDIF ()
