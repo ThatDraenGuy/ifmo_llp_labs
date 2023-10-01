@@ -15,8 +15,9 @@ target_sources(${PROJECT_NAME} PRIVATE ${SOURCES} PUBLIC ${HEADERS})
 
 add_library(${PROJECT_NAME}_lib ${SOURCES})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g")
 IF (${WINDOWS})
     add_compile_definitions(WINDOWS)
-    target_link_libraries(${PROJECT_NAME} PRIVATE clang_rt.asan-x86_64)
+    target_link_libraries(${PROJECT_NAME} PRIVATE clang_rt.asan_dynamic-x86_64 clang_rt.asan_dynamic_runtime_thunk-x86_64)
+ELSE ()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g")
 ENDIF ()
