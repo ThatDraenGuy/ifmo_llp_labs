@@ -8,7 +8,14 @@
 #include <errno.h>
 #include <malloc.h>
 #include <string.h>
+
+#ifdef WIN32
+#include <io.h>
+#define F_OK 0
+#define access _access
+#else
 #include <unistd.h>
+#endif
 
 #define ERROR_SOURCE "FILE_MANAGER"
 #define ERROR_TYPE "FILE_MANAGER_ERROR"
