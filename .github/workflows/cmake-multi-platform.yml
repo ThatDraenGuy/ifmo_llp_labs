@@ -15,8 +15,8 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - { name: "Windows MSVC", os: windows-latest, cc: "clang", cxx: "clang" }
-          - { name: "Ubuntu gcc", os: ubuntu-latest, cc: "gcc", cxx: "g++" }
+          - { name: "Windows MSVC", os: windows-latest, cc: "clang", cxx: "clang", define: "WIN32" }
+          - { name: "Ubuntu gcc", os: ubuntu-latest, cc: "gcc", cxx: "g++", define: "LINUX" }
         
     steps:
       - uses: actions/checkout@v3
@@ -34,6 +34,7 @@ jobs:
           cc: ${{ matrix.config.cc }}
           cxx: ${{ matrix.config.cxx }}
           configure-options: -G Ninja
+          build-options: -D ${{ matrix.define }}
           build-type: Release
           
       - name: Test
