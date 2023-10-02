@@ -9,4 +9,4 @@ set BUILD_DIR=cmake-build
 %CMAKE% . -B %BUILD_DIR% -G %GENERATOR% -DCMAKE_MAKE_PROGRAM=%MAKE% -DCMAKE_C_COMPILER=%CC%
 %CMAKE% --build %BUILD_DIR% --target all
 cd %BUILD_DIR%
-%CTEST%
+%CTEST% --output-on-failure
