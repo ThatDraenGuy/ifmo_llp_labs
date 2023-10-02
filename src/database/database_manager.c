@@ -22,6 +22,7 @@ result_t database_manager_ctor(struct database_manager *self, char *file_name) {
 
   self->current_result = NULL;
   self->current_statement = NULL;
+  self->was_statement_successful = true;
   OK;
 }
 
@@ -38,14 +39,24 @@ database_manager_execute_statement(struct database_manager *self,
   self->current_statement = statement;
   self->current_result = statement_result_new();
   *statement_result = self->current_result;
-  return statement->execute_impl(statement, self->table_manager,
-                                 self->current_result);
+  TRY(statement->execute_impl(statement, self->table_manager,
+                              self->current_result));
+  CATCH(error, {
+    self->was_statement_successful = false;
+    THROW(error);
+  })
+  self->was_statement_successful = true;
+  OK;
 }
 
 void database_manager_finish_statement(struct database_manager *self) {
   if (self->current_statement != NULL) {
     statement_destroy(self->current_statement);
-    statement_result_destroy(self->current_result);
+    if (self->was_statement_successful) {
+      statement_result_destroy(self->current_result);
+    } else {
+      free(self->current_result);
+    }
     self->current_result = NULL;
     self->current_statement = NULL;
   }

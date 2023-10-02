@@ -10,8 +10,8 @@
 #include "public/database/table_manager.h"
 
 typedef enum {
+  STATEMENT_RESULT_NONE,
   STATEMENT_RESULT_RECORDS,
-  STATEMENT_RESULT_NONE
 } statement_result_type_t;
 
 struct statement_result {
