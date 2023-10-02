@@ -110,14 +110,9 @@ void record_clear_all(struct record *self) {
 
 struct record *record_new(struct column_schema_group *column_schema_group) {
   struct record *self =
-      malloc(sizeof(struct record) +
+      calloc(1, sizeof(struct record) +
              sizeof(column_value_t) * column_schema_group->columns_amount);
   self->column_schema_group = column_schema_group;
-
-  for (size_t index = 0; index < self->column_schema_group->columns_amount;
-       index++) {
-    self->values[index] = (column_value_t){0};
-  }
   return self;
 }
 

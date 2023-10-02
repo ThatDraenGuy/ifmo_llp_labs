@@ -34,9 +34,9 @@ static bool verify_size(item_t item, const size_t *item_offset,
     *item_offset += sizeof(Type);                                              \
     OK;                                                                        \
   }
-READ_IMPL(int32_t, int32);
-READ_IMPL(uint64_t, uint64);
-READ_IMPL(float, float);
+READ_IMPL(int32_t, int32)
+READ_IMPL(uint64_t, uint64)
+READ_IMPL(float, float)
 
 static result_t read_string(item_t item, size_t *item_offset, str_t *result) {
   TRY(str_try_from(item.data + *item_offset, item.size - *item_offset, result));
