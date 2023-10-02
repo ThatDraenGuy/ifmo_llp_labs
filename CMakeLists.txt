@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 11)
 
 enable_testing()
 set(TESTS_WORKING_DIR ${CMAKE_BINARY_DIR}/tests)
-configure_file("CTestCustom.cmake.in" ${CMAKE_BINARY_DIR}/CTestCustom.cmake)
+file(MAKE_DIRECTORY ${TESTS_WORKING_DIR})
 
 #project targets
 set(PROJECT_LIB ${PROJECT_NAME}_lib)
@@ -30,7 +30,7 @@ target_include_directories(${PROJECT_TEST} PRIVATE ${HEADERS_DIR})
 #test setup
 add_test(
         NAME test
-        COMMAND $<TARGET_FILE:${PROJECT_TEST}>
+        COMMAND ${CMAKE_COMMAND} -DTEST_EXECUTABLE=$<TARGET_FILE:${PROJECT_TEST}> -DTEST_WORKING_DIR=${TESTS_WORKING_DIR} -P ${CMAKE_CURRENT_SOURCE_DIR}/runtest.cmake
         WORKING_DIRECTORY ${TESTS_WORKING_DIR}
 )
 
