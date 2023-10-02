@@ -7,6 +7,9 @@
 
 #include "public/prelude.h"
 
+#define TEST_ERROR(Message)                                                    \
+  error_new("test", "test", (error_code_t){0}, Message)
+
 #define WRAP_WITH_DB(FileName, Function)                                       \
   struct database_manager *database_manager = database_manager_new();          \
   TRY(database_manager_ctor(database_manager, FileName));                      \

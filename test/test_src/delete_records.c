@@ -16,27 +16,37 @@ static result_t test(struct database_manager *database_manager) {
 
   struct statement_result *result = NULL;
   {
+    struct predicate *where =
+        predicate_of(column_value(TABLE_NAME(), STATUS_COL(), COLUMN_TYPE_BOOL),
+                     literal((bool)true), NEQ);
+    struct i_statement *delete = delete_statement_of(TABLE_NAME(), where);
+    TRY(database_manager_execute_statement(database_manager, delete, &result));
+    CATCH(error, THROW(error))
+  }
+
+  {
     struct predicate *where = predicate_of(literal(1), literal(1), EQ);
     struct i_statement *query = query_statement_of(TABLE_NAME(), where, 0);
     TRY(database_manager_execute_statement(database_manager, query, &result));
     CATCH(error, THROW(error))
 
     struct record_view *view = statement_result_records(result);
-    uint64_t actual_record_num = 0;
+    uint64_t remaining_records_num = 0;
+
     struct record *record = NULL;
     while (record_view_has_next(view)) {
       TRY(record_view_next(view, &record));
       CATCH(error, THROW(error))
 
-      actual_record_num++;
+      remaining_records_num++;
+
       TRY(record_print(record));
       CATCH(error, THROW(error))
     }
 
-    if (record_num != actual_record_num)
+    if (remaining_records_num != (record_num - 1) / 3 + 1)
       THROW(TEST_ERROR("Records num mismatch"));
   }
-
   OK;
 }
 

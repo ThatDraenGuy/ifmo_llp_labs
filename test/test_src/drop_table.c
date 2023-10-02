@@ -2,8 +2,8 @@
 // Created by draen on 02.10.23.
 //
 
-#include "create_common_table.h"
-#include "database_manager_wrapper.h"
+#include "common_table_operations.h"
+#include "common_test_utils.h"
 
 static result_t test(struct database_manager *database_manager) {
   TRY(create_common_table(database_manager));

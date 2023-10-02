@@ -181,7 +181,7 @@ static result_t vacuum_page(struct page_data_header *page,
              sizeof(struct page_item_id_data));
 
       // adjust new gap parameters
-      gap_id_index = item_id_offset;
+      gap_id_index.bytes += sizeof(struct page_item_id_data);
       gap_data_index.bytes -= item_id->item_size.bytes;
     }
   }
