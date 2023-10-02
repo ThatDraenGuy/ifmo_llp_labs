@@ -1,13 +1,15 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.0)
 project(llp_lab C)
 
 set(CMAKE_C_STANDARD 11)
 
 enable_testing()
+set(TESTS_WORKING_DIR ${CMAKE_BINARY_DIR}/tests)
+configure_file("CTestCustom.cmake.in" ${CMAKE_BINARY_DIR}/CTestCustom.cmake)
 
 #project targets
 set(PROJECT_LIB ${PROJECT_NAME}_lib)
-SET(PROJECT_TEST ${PROJECT_NAME}_test)
+set(PROJECT_TEST ${PROJECT_NAME}_test)
 
 #project headers dir
 set(HEADERS_DIR include)
@@ -29,6 +31,7 @@ target_include_directories(${PROJECT_TEST} PRIVATE ${HEADERS_DIR})
 add_test(
         NAME test
         COMMAND $<TARGET_FILE:${PROJECT_TEST}>
+        WORKING_DIRECTORY ${TESTS_WORKING_DIR}
 )
 
 #windows compatability setup
