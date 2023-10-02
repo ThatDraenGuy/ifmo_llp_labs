@@ -7,6 +7,7 @@
 #include "public/storage/page_data_manager.h"
 #include <malloc.h>
 #include <memory.h>
+#include <string.h>
 
 #define ERROR_SOURCE "PAGE_DATA_MANAGER"
 bool item_iterator_has_next(struct item_iterator *self) {

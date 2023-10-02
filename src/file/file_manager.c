@@ -34,10 +34,18 @@ result_t file_manager_ctor(struct file_manager *self, char *file_name) {
   bool file_exists = access(file_name, F_OK) == 0;
   if (!file_exists) {
     // TODO think
-    fclose(fopen(file_name, "a"));
+    FILE *file = fopen(file_name, "w");
+    if (file == NULL) {
+      free(self);
+      THROW(error_self());
+    }
+    if (fclose(file) != 0) {
+      free(self);
+      THROW(error_self());
+    }
   }
 
-  FILE *file = fopen(file_name, "r+");
+  FILE *file = fopen(file_name, "rb+");
 
   if (file == NULL) {
     free(self);
