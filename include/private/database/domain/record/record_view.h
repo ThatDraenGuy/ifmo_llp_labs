@@ -6,8 +6,8 @@
 #define LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_VIEW_H
 
 #include "public/database/domain/predicate.h"
-#include "public/database/domain/record_group.h"
-#include "public/database/domain/record_view.h"
+#include "public/database/domain/record/record_group.h"
+#include "public/database/domain/record/record_view.h"
 #include "public/database/table_manager.h"
 #include "public/storage/page_data_manager.h"
 

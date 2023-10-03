@@ -5,9 +5,9 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_STATEMENTS_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_STATEMENTS_H
 
-#include "join.h"
-#include "record_group.h"
-#include "record_update.h"
+#include "public/database/domain/join.h"
+#include "public/database/domain/record/record_group.h"
+#include "public/database/domain/record/record_update.h"
 #include "statement_interface.h"
 
 struct i_statement *create_table_statement_of(struct table_schema *schema);

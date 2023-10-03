@@ -5,7 +5,7 @@
 #ifndef LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_GROUP_H
 #define LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_GROUP_H
 
-#include "public/database/domain/record_group.h"
+#include "public/database/domain/record/record_group.h"
 #include "public/util/queue.h"
 
 struct record_iterator {

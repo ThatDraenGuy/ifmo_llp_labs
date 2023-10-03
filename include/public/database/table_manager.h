@@ -6,12 +6,12 @@
 #define LLP_LAB_INCLUDE_PUBLIC_STORAGE_TABLE_MANAGER_H
 
 #include "domain/predicate.h"
-#include "domain/record_group.h"
-#include "domain/record_update.h"
-#include "domain/record_view.h"
 #include "domain/schema.h"
-#include "domain/single_record_holder.h"
 #include "domain/table.h"
+#include "public/database/domain/record/record_group.h"
+#include "public/database/domain/record/record_update.h"
+#include "public/database/domain/record/record_view.h"
+#include "public/database/domain/record/single_record_holder.h"
 #include "public/util/result.h"
 
 struct table_manager;

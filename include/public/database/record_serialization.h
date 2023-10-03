@@ -5,8 +5,8 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_RECORD_SERIALIZATION_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_RECORD_SERIALIZATION_H
 
-#include "domain/record_group.h"
 #include "domain/schema.h"
+#include "public/database/domain/record/record_group.h"
 #include "public/storage/domain/item.h"
 #include "public/util/result.h"
 

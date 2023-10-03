@@ -5,44 +5,16 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_PREDICATE_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_PREDICATE_H
 
-#include "record_group.h"
+#include "public/database/domain/expression/expression_interface.h"
+#include "public/database/domain/record/record_group.h"
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef enum { EQ, NEQ, LESS, LEQ, GREATER, GEQ } comparison_operator_t;
 
-struct predicate_value;
-
-struct predicate_value *literal_uint64(uint64_t value);
-struct predicate_value *literal_int32(int32_t value);
-struct predicate_value *literal_string(str_t value);
-struct predicate_value *literal_bool(bool value);
-struct predicate_value *literal_float(float value);
-
-#define literal(Value)                                                         \
-  _Generic(Value,                                                              \
-      uint64_t: literal_uint64,                                                \
-      int32_t: literal_int32,                                                  \
-      str_t: literal_string,                                                   \
-      bool: literal_bool,                                                      \
-      float: literal_float)(Value)
-
-struct predicate_value *column_value(str_t table_name, str_t column_name,
-                                     column_type_t column_type);
 
 struct predicate;
 
-struct predicate *predicate_of(struct predicate_value *first,
-                               struct predicate_value *second,
-                               comparison_operator_t comparison_operator);
-
-struct predicate *predicate_and(struct predicate *first,
-                                struct predicate *second);
-
-struct predicate *predicate_or(struct predicate *first,
-                               struct predicate *second);
-
-struct predicate *predicate_not(struct predicate *predicate);
+struct predicate *predicate_of(struct i_expression *expression);
 
 result_t predicate_apply(struct predicate *self, struct record *record,
                          bool *result);

@@ -2,8 +2,8 @@
 // Created by draen on 30.09.23.
 //
 
-#include "private/database/domain/record_update.h"
-#include "private/database/domain/record.h"
+#include "private/database/domain/record/record_update.h"
+#include "private/database/domain/record/record.h"
 #include "private/database/domain/schema.h"
 #include <malloc.h>
 #include <stdarg.h>

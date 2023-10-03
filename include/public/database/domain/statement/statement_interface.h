@@ -5,8 +5,8 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_STATEMENT_INTERFACE_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_STATEMENT_INTERFACE_H
 
-#include "predicate.h"
-#include "record_view.h"
+#include "public/database/domain/predicate.h"
+#include "public/database/domain/record/record_view.h"
 #include <stddef.h>
 
 struct statement_result;

@@ -3,7 +3,7 @@
 //
 
 #include "private/database/database_manager.h"
-#include "private/database/domain/statement_interface.h"
+#include "private/database/domain/statement/statement_interface.h"
 #include "public/error/errors_common.h"
 #include <malloc.h>
 

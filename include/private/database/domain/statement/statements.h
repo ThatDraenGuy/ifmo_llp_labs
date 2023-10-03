@@ -5,7 +5,7 @@
 #ifndef LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_STATEMENTS_H
 #define LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_STATEMENTS_H
 
-#include "public/database/domain/statements.h"
+#include "public/database/domain/statement/statements.h"
 #include "statement_interface.h"
 
 struct create_table_statement {

@@ -5,10 +5,10 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_RECORD_GROUP_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_RECORD_GROUP_H
 
+#include "public/database/domain/schema.h"
+#include "public/database/domain/types.h"
 #include "public/util/result.h"
 #include "record.h"
-#include "schema.h"
-#include "types.h"
 #include <stdbool.h>
 
 struct record_iterator;

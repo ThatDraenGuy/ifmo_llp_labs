@@ -16,16 +16,16 @@ static result_t test(struct database_manager *database_manager) {
 
   struct statement_result *result = NULL;
   {
-    struct predicate *where =
-        predicate_of(column_value(TABLE_NAME(), STATUS_COL(), COLUMN_TYPE_BOOL),
-                     literal((bool)true), NEQ);
+    struct predicate *where = predicate_of(expr_of(
+        column_expr(TABLE_NAME(), STATUS_COL(), COLUMN_TYPE_BOOL),
+        literal_expr((bool)true), comparison_operator(NEQ, COLUMN_TYPE_BOOL)));
     struct i_statement *delete = delete_statement_of(TABLE_NAME(), where);
     TRY(database_manager_execute_statement(database_manager, delete, &result));
     CATCH(error, THROW(error))
   }
 
   {
-    struct predicate *where = predicate_of(literal(1), literal(1), EQ);
+    struct predicate *where = predicate_of(LITERAL_TRUE);
     struct i_statement *query = query_statement_of(TABLE_NAME(), where, 0);
     TRY(database_manager_execute_statement(database_manager, query, &result));
     CATCH(error, THROW(error))

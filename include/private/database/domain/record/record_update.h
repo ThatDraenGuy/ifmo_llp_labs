@@ -5,8 +5,8 @@
 #ifndef LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_UPDATE_H
 #define LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_UPDATE_H
 
-#include "public/database/domain/record_update.h"
-#include "public/database/domain/single_record_holder.h"
+#include "public/database/domain/record/record_update.h"
+#include "public/database/domain/record/single_record_holder.h"
 
 struct record_update {
   bool applicable_in_place;

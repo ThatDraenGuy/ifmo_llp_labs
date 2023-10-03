@@ -2,7 +2,7 @@
 // Created by draen on 25.09.23.
 //
 
-#include "private/database/domain/statements.h"
+#include "private/database/domain/statement/statements.h"
 #include <malloc.h>
 #include <stdarg.h>
 

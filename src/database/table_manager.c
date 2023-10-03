@@ -3,12 +3,15 @@
 //
 
 #include "private/database/table_manager.h"
-#include "private/database/domain/record_update.h"
-#include "private/database/domain/record_view.h"
+#include "private/database/domain/record/record_update.h"
+#include "private/database/domain/record/record_view.h"
 #include "private/database/domain/schema.h"
 #include "private/database/domain/table.h"
-#include "public/database/domain/record.h"
-#include "public/database/domain/single_record_holder.h"
+#include "public/database/domain/expression/expression_operators.h"
+#include "public/database/domain/expression/expressions.h"
+#include "public/database/domain/predicate.h"
+#include "public/database/domain/record/record.h"
+#include "public/database/domain/record/single_record_holder.h"
 #include "public/database/record_serialization.h"
 #include "public/error/errors_common.h"
 #include <malloc.h>
@@ -509,10 +512,11 @@ result_t table_manager_create_table(struct table_manager *self,
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   // try to find a table with requested name
-  struct predicate *table_name_equal = predicate_of(
-      column_value(TABLE_DATA_TABLE_NAME(),
-                   TABLE_DATA_TABLE_COLUMN_TABLE_NAME(), COLUMN_TYPE_STRING),
-      literal(table_schema_get_name(schema)), EQ);
+  struct predicate *table_name_equal = predicate_of(expr_of(
+      column_expr(TABLE_DATA_TABLE_NAME(), TABLE_DATA_TABLE_COLUMN_TABLE_NAME(),
+                  COLUMN_TYPE_STRING),
+      literal_expr(table_schema_get_name(schema)),
+      comparison_operator(EQ, COLUMN_TYPE_STRING)));
 
   bool does_table_exist = true;
   struct single_record_holder *existing_table_data_record = NULL;
@@ -605,10 +609,10 @@ result_t table_manager_get_table(struct table_manager *self, str_t table_name,
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   // where to find table by name
-  struct predicate *table_name_equal = predicate_of(
-      column_value(TABLE_DATA_TABLE_NAME(),
-                   TABLE_DATA_TABLE_COLUMN_TABLE_NAME(), COLUMN_TYPE_STRING),
-      literal(table_name), EQ);
+  struct predicate *table_name_equal = predicate_of(expr_of(
+      column_expr(TABLE_DATA_TABLE_NAME(), TABLE_DATA_TABLE_COLUMN_TABLE_NAME(),
+                  COLUMN_TYPE_STRING),
+      literal_expr(table_name), comparison_operator(EQ, COLUMN_TYPE_STRING)));
 
   // find table record
   struct single_record_holder *table_data_holder = NULL;
@@ -654,10 +658,10 @@ result_t table_manager_get_table(struct table_manager *self, str_t table_name,
   single_record_holder_destroy(table_data_holder);
 
   // where to find columns by table id
-  struct predicate *table_id_equal = predicate_of(
-      column_value(TABLE_COLUMNS_TABLE_NAME(),
-                   TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID(), COLUMN_TYPE_UINT64),
-      literal(table_id), EQ);
+  struct predicate *table_id_equal = predicate_of(expr_of(
+      column_expr(TABLE_COLUMNS_TABLE_NAME(),
+                  TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID(), COLUMN_TYPE_UINT64),
+      literal_expr(table_id), comparison_operator(EQ, COLUMN_TYPE_UINT64)));
 
   // find the columns
   struct record_view *columns_view = NULL;
@@ -715,10 +719,10 @@ result_t table_manager_drop_table(struct table_manager *self,
                                   str_t table_name) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
-  struct predicate *table_name_equal = predicate_of(
-      column_value(TABLE_DATA_TABLE_NAME(),
-                   TABLE_DATA_TABLE_COLUMN_TABLE_NAME(), COLUMN_TYPE_STRING),
-      literal(table_name), EQ);
+  struct predicate *table_name_equal = predicate_of(expr_of(
+      column_expr(TABLE_DATA_TABLE_NAME(), TABLE_DATA_TABLE_COLUMN_TABLE_NAME(),
+                  COLUMN_TYPE_STRING),
+      literal_expr(table_name), comparison_operator(EQ, COLUMN_TYPE_STRING)));
 
   struct single_record_holder *table_data_holder = NULL;
   TRY(find_first_maybe_delete(self, self->table_data_table, table_name_equal,
@@ -748,10 +752,10 @@ result_t table_manager_drop_table(struct table_manager *self,
   })
   single_record_holder_destroy(table_data_holder);
 
-  struct predicate *column_delete = predicate_of(
-      column_value(TABLE_COLUMNS_TABLE_NAME(),
-                   TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID(), COLUMN_TYPE_UINT64),
-      literal(table_id), EQ);
+  struct predicate *column_delete = predicate_of(expr_of(
+      column_expr(TABLE_COLUMNS_TABLE_NAME(),
+                  TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID(), COLUMN_TYPE_UINT64),
+      literal_expr(table_id), comparison_operator(EQ, COLUMN_TYPE_UINT64)));
 
   TRY(table_manager_delete(self, self->table_columns_table, column_delete));
   CATCH(error, {

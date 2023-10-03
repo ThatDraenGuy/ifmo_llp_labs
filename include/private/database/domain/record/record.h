@@ -5,7 +5,7 @@
 #ifndef LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_H
 #define LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_H
 
-#include "public/database/domain/record.h"
+#include "public/database/domain/record/record.h"
 #include "public/database/domain/types.h"
 
 struct record {

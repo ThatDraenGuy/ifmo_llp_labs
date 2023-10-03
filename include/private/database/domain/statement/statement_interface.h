@@ -6,7 +6,7 @@
 #define LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_STATEMENT_INTERFACE_H
 
 #include "public/database/database_manager.h"
-#include "public/database/domain/statement_interface.h"
+#include "public/database/domain/statement/statement_interface.h"
 #include "public/database/table_manager.h"
 
 typedef enum {

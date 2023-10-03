@@ -6,7 +6,7 @@
 #define LLP_LAB_INCLUDE_PUBLIC_STORAGE_DATABASE_MANAGER_H
 
 #include "domain/schema.h"
-#include "domain/statement_interface.h"
+#include "public/database/domain/statement/statement_interface.h"
 #include "public/util/result.h"
 
 struct database_manager;

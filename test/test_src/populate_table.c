@@ -16,7 +16,7 @@ static result_t test(struct database_manager *database_manager) {
 
   struct statement_result *result = NULL;
   {
-    struct predicate *where = predicate_of(literal(1), literal(1), EQ);
+    struct predicate *where = predicate_of(LITERAL_TRUE);
     struct i_statement *query = query_statement_of(TABLE_NAME(), where, 0);
     TRY(database_manager_execute_statement(database_manager, query, &result));
     CATCH(error, THROW(error))

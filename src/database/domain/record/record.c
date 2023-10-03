@@ -2,7 +2,7 @@
 // Created by draen on 27.09.23.
 //
 
-#include "private/database/domain/record.h"
+#include "private/database/domain/record/record.h"
 #include "public/error/errors_common.h"
 #include <malloc.h>
 

@@ -5,7 +5,7 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_RECORD_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_RECORD_H
 
-#include "schema.h"
+#include "public/database/domain/schema.h"
 
 struct record;
 
