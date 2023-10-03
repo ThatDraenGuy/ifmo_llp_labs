@@ -10,8 +10,18 @@
 #include <string.h>
 
 #define ERROR_SOURCE "PAGE_DATA_MANAGER"
+#define ERROR_TYPE "PAGE_DATA_MANAGER_ERROR"
+enum error_code { ITEM_SIZE_EXCEEDED };
+static const char *const error_messages[] = {[ITEM_SIZE_EXCEEDED] =
+                                                 "Item size exceeded!"};
+
 bool item_iterator_has_next(struct item_iterator *self) {
   return !self->is_empty;
+}
+
+static struct error *error_self(enum error_code error_code) {
+  return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},
+                   error_messages[error_code]);
 }
 
 static result_t item_iterator_preload_next_item(struct item_iterator *self) {
@@ -136,7 +146,7 @@ static void initialize_page(struct page_data_manager *self,
   page_header->item_amount = 0;
 }
 
-#define AT_PAGE(Page, Index) Page->contents + Index.bytes
+#define AT_PAGE(Page, Index) (Page->contents + Index.bytes)
 #define NEXT_PAGE_DATA(PageData, PageIt)                                       \
   {                                                                            \
     page_t page = PAGE_NULL;                                                   \
@@ -154,14 +164,11 @@ static void initialize_page(struct page_data_manager *self,
 
 static result_t vacuum(struct page_group_manager *page_group_manager,
                        struct page_iterator *src_page_it,
-                       struct page_iterator *dest_page_it,
-                       page_group_id_t page_group_id) {
+                       struct page_iterator *dest_page_it) {
   page_index_t dest_item_index = {0};
   page_index_t dest_item_id_index = {0};
   page_index_t src_item_index = {0};
   page_index_t src_item_id_index = {0};
-  //  page_id_t src_page_id = (page_id_t){page_group_id.bytes};
-  //  page_id_t dest_page_id = (page_id_t){page_group_id.bytes};
 
   struct page_data_header *src_page_data;
   struct page_data_header *dest_page_data;
@@ -339,8 +346,7 @@ result_t page_data_manager_vacuum(struct page_data_manager *self,
   struct page_iterator *dest_page_it = page_group_manager_get_group(
       self->page_group_manager, page_group_id, false);
 
-  TRY(vacuum(self->page_group_manager, src_page_it, dest_page_it,
-             page_group_id));
+  TRY(vacuum(self->page_group_manager, src_page_it, dest_page_it));
   CATCH(error, {
     page_iterator_destroy(src_page_it);
     page_iterator_destroy(dest_page_it);
@@ -349,28 +355,6 @@ result_t page_data_manager_vacuum(struct page_data_manager *self,
   page_iterator_destroy(src_page_it);
   page_iterator_destroy(dest_page_it);
   OK;
-
-  //  struct page_iterator *page_it = page_group_manager_get_group(
-  //      self->page_group_manager, page_group_id, false);
-
-  //  while (page_iterator_has_next(page_it)) {
-  //    // go through each page in a group and vacuum it
-  //    page_t page = PAGE_NULL;
-  //    TRY(page_iterator_next(page_it, &page));
-  //    CATCH(error, {
-  //      page_iterator_destroy(page_it);
-  //      THROW(error);
-  //    })
-  //
-  //    TRY(vacuum_page(self->page_group_manager, page_it, page_group_id));
-  //    CATCH(error, {
-  //      page_iterator_destroy(page_it);
-  //      THROW(error);
-  //    })
-  //  }
-  //
-  //  page_iterator_destroy(page_it);
-  //  OK;
 }
 
 struct page_data_manager *page_data_manager_new() {
@@ -435,10 +419,18 @@ result_t page_data_manager_delete_group(struct page_data_manager *self,
                                          page_group_id);
 }
 
+size_t max_item_size(struct page_data_manager *self) {
+  return page_group_manager_get_page_capacity(self->page_group_manager) -
+         sizeof(struct page_item_id_data);
+}
+
 result_t page_data_manager_insert(struct page_data_manager *self,
                                   page_group_id_t page_group_id, item_t item,
                                   bool immediate) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
+
+  if (item.size > max_item_size(self))
+    THROW(error_self(ITEM_SIZE_EXCEEDED));
 
   struct page_iterator *page_it = page_group_manager_get_group(
       self->page_group_manager, page_group_id, true);
