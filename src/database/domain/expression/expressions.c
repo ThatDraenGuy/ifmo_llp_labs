@@ -118,7 +118,8 @@ static void operator_expression_destroy(struct i_expression *expression) {
 static struct i_expression *
 operator_expression_clone(struct i_expression *expression) {
   struct operator_expression *self = (struct operator_expression *)expression;
-  return expr_of(self->first, self->second, self->expression_operator);
+  return expr_of(expression_clone(self->first), expression_clone(self->second),
+                 expression_operator_clone(self->expression_operator));
 }
 
 static result_t operator_expression_get(struct i_expression *expression,

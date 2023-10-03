@@ -142,10 +142,12 @@ result_t page_manager_get_page(struct page_manager *self, page_id_t page_id,
     struct cache_entry *entry = get_cache_entry(self, index);
     if (entry->relevancy_value.bytes != 0 &&
         entry->page_id.bytes == page_id.bytes) {
+      self->cache_count++;
       load_page_from_cache(self, index, page_id, result);
       OK;
     }
   }
+  self->non_cache_count++;
   return load_page_from_resolver(self, page_id, result);
 }
 
@@ -187,6 +189,8 @@ result_t page_manager_ctor(struct page_manager *self,
                            struct page_resolver *page_resolver,
                            size_t cache_size) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
+  self->cache_count = 0;
+  self->non_cache_count = 0;
   self->page_resolver = page_resolver;
   self->cache_size = (cache_entry_index_t){.bytes = cache_size};
   self->current_most_relevant_value = (relevancy_value_t){1};

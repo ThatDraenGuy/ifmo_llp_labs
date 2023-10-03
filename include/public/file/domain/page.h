@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define DEFAULT_PAGE_SIZE 1024
+#define DEFAULT_PAGE_SIZE 128
 
 /// page id type. Uniquely identifies a page
 typedef struct {
@@ -21,7 +21,7 @@ typedef struct {
 
 static inline bool page_id_is_null(page_id_t page_id) {
   return page_id.bytes == PAGE_ID_NULL.bytes;
-};
+}
 
 typedef struct {
   void *data;

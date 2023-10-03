@@ -21,12 +21,13 @@ size_t page_group_manager_get_page_capacity(struct page_group_manager *self);
 
 struct page_iterator *
 page_group_manager_get_group(struct page_group_manager *self,
-                             page_group_id_t page_group_id);
+                             page_group_id_t page_group_id, bool inverse);
 result_t page_group_manager_get_page(struct page_group_manager *self,
                                      page_id_t page_id, page_t *result);
 
 result_t page_group_manager_add_page(struct page_group_manager *self,
-                                     struct page_iterator *it, page_t *result);
+                                     page_group_id_t page_group_id,
+                                     page_t *result);
 
 result_t page_group_manager_create_group(struct page_group_manager *self,
                                          page_group_id_t *result);

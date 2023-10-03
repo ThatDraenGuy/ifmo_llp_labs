@@ -14,6 +14,8 @@ struct i_expression_operator {
   result_t (*apply_impl)(struct i_expression_operator *self,
                          column_value_t first, column_value_t second,
                          column_value_t *result);
+  struct i_expression_operator *(*clone_impl)(
+      struct i_expression_operator *self);
   void (*destroy_impl)(struct i_expression_operator *self);
 };
 

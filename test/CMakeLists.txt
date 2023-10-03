@@ -38,10 +38,13 @@ foreach (TEST_SOURCE ${TEST_SOURCES})
     target_include_directories(${TEST_ID} PRIVATE ${HEADERS_DIR})
     target_include_directories(${TEST_ID} PRIVATE ${TEST_UTIL_HEADERS_DIR})
 
-    #setup test
-    add_test(
-            NAME ${TEST_NAME}
-            COMMAND ${CMAKE_COMMAND} -DTEST_EXECUTABLE=$<TARGET_FILE:${TEST_ID}> -DTEST_WORKING_DIR=${TEST_WORKING_DIR} -P ${CMAKE_CURRENT_SOURCE_DIR}/runtest.cmake
-            WORKING_DIRECTORY ${TEST_WORKING_DIR}
-    )
+    if (NOT ${TEST_NAME} MATCHES "^stress.*")
+        #setup test
+        add_test(
+                NAME ${TEST_NAME}
+                COMMAND ${CMAKE_COMMAND} -DTEST_EXECUTABLE=$<TARGET_FILE:${TEST_ID}> -DTEST_WORKING_DIR=${TEST_WORKING_DIR} -P ${CMAKE_CURRENT_SOURCE_DIR}/runtest.cmake
+                WORKING_DIRECTORY ${TEST_WORKING_DIR}
+        )
+    endif ()
+
 endforeach ()

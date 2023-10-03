@@ -8,6 +8,8 @@
 #include "page_resolver.h"
 #include "public/util/result.h"
 
+#define DEFAULT_CACHE_SIZE 10
+
 struct page_manager;
 
 struct page_manager *page_manager_new();

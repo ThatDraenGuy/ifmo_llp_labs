@@ -61,6 +61,12 @@ static result_t arithmetic_operator_apply(struct i_expression_operator *oper,
   }
   OK;
 }
+static struct i_expression_operator *
+arithmetic_operator_clone(struct i_expression_operator *oper) {
+  struct arithmetic_operator *self = (struct arithmetic_operator *)oper;
+  return arithmetic_operator(self->arithmetic_operator,
+                             self->parent.first_type);
+}
 
 static void arithmetic_operator_destroy(struct i_expression_operator *oper) {
   struct arithmetic_operator *self = (struct arithmetic_operator *)oper;
@@ -77,6 +83,7 @@ arithmetic_operator(arithmetic_operator_t arithmetic_operator,
   oper->parent.second_type = operand_type;
   oper->parent.result_type = operand_type;
   oper->parent.apply_impl = arithmetic_operator_apply;
+  oper->parent.clone_impl = arithmetic_operator_clone;
   oper->parent.destroy_impl = arithmetic_operator_destroy;
   return (struct i_expression_operator *)oper;
 }
@@ -139,6 +146,13 @@ static result_t comparison_operator_apply(struct i_expression_operator *oper,
   OK;
 }
 
+static struct i_expression_operator *
+comparison_operator_clone(struct i_expression_operator *oper) {
+  struct comparison_operator *self = (struct comparison_operator *)oper;
+  return comparison_operator(self->comparison_operator,
+                             self->parent.first_type);
+}
+
 static void comparison_operator_destroy(struct i_expression_operator *oper) {
   struct comparison_operator *self = (struct comparison_operator *)oper;
   free(self);
@@ -154,6 +168,7 @@ comparison_operator(comparison_operator_t comparison_operator,
   oper->parent.second_type = operand_type;
   oper->parent.result_type = COLUMN_TYPE_BOOL;
   oper->parent.apply_impl = comparison_operator_apply;
+  oper->parent.clone_impl = comparison_operator_clone;
   oper->parent.destroy_impl = comparison_operator_destroy;
   return (struct i_expression_operator *)oper;
 }
@@ -177,6 +192,12 @@ static result_t logical_operator_apply(struct i_expression_operator *oper,
     break;
   }
   OK;
+}
+
+static struct i_expression_operator *
+logical_operator_clone(struct i_expression_operator *oper) {
+  struct logical_operator *self = (struct logical_operator *)oper;
+  return logical_operator(self->logical_operator);
 }
 
 static void logical_operator_destroy(struct i_expression_operator *oper) {

@@ -28,6 +28,13 @@ result_t expression_operator_apply(struct i_expression_operator *self,
   return self->apply_impl(self, first, second, result);
 }
 
+struct i_expression_operator *
+expression_operator_clone(struct i_expression_operator *self) {
+  if (self == NULL)
+    return NULL;
+  return self->clone_impl(self);
+}
+
 void expression_operator_destroy(struct i_expression_operator *self) {
   return self->destroy_impl(self);
 }

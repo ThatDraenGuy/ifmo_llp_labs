@@ -12,7 +12,9 @@
 #define ITERATOR_ERROR_SOURCE "PAGE_ITERATOR"
 
 bool page_iterator_has_next(struct page_iterator *self) {
-  return !page_id_is_null(self->next_page_id);
+  return self->inverse && (!self->started || self->next_page_id.bytes !=
+                                                 self->page_group_id.bytes) ||
+         !self->inverse && !page_id_is_null(self->next_page_id);
 }
 result_t page_iterator_current(struct page_iterator *self, page_t *result) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
@@ -35,6 +37,7 @@ result_t page_iterator_next(struct page_iterator *self, page_t *result) {
   if (!page_iterator_has_next(self))
     THROW(error_common(ITERATOR_ERROR_SOURCE, ERR_COMMON_ITER_OUT_OF_RANGE));
 
+  self->started = true;
   page_t page = PAGE_NULL;
   TRY(page_manager_get_page(self->page_manager, self->next_page_id, &page));
   CATCH(error, THROW(error))
@@ -44,7 +47,8 @@ result_t page_iterator_next(struct page_iterator *self, page_t *result) {
 
   struct page_header *page_header = page.data;
   self->current_page_id = self->next_page_id;
-  self->next_page_id = page_header->next;
+  self->next_page_id =
+      self->inverse ? page_header->previous : page_header->next;
   OK;
 }
 
@@ -52,9 +56,12 @@ void page_iterator_destroy(struct page_iterator *self) { free(self); }
 
 static struct page_iterator *
 page_iterator_new(struct page_manager *page_manager,
-                  page_group_id_t page_group_id) {
+                  page_group_id_t page_group_id, bool inverse) {
   struct page_iterator *it = malloc(sizeof(struct page_iterator));
   it->page_manager = page_manager;
+  it->inverse = inverse;
+  it->started = false;
+  it->page_group_id = page_group_id;
   it->current_page_id = PAGE_ID_NULL;
   it->next_page_id = (page_id_t){page_group_id.bytes};
   return it;
@@ -133,7 +140,7 @@ result_t page_group_manager_ctor(struct page_group_manager *self,
   free(default_header);
 
   struct page_manager *page_manager = page_manager_new();
-  TRY(page_manager_ctor(page_manager, page_resolver, 10));
+  TRY(page_manager_ctor(page_manager, page_resolver, DEFAULT_CACHE_SIZE));
   CATCH(error, {
     free(self);
     THROW(error);
@@ -159,39 +166,49 @@ result_t page_group_manager_set_meta_group_id(struct page_group_manager *self,
 }
 
 result_t page_group_manager_add_page(struct page_group_manager *self,
-                                     struct page_iterator *it, page_t *result) {
+                                     page_group_id_t page_group_id,
+                                     page_t *result) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   page_id_t new_last_page_id = PAGE_ID_NULL;
-  page_t new_page = PAGE_NULL;
-  TRY(create_page(self, &new_page, &new_last_page_id));
-  CATCH(error, THROW(error))
-  result->data = new_page.data + sizeof(struct page_header);
-
-  page_id_t old_last_page_id = it->current_page_id;
-  page_t old_last_page = PAGE_NULL;
-  TRY(page_manager_get_page(self->page_manager, old_last_page_id,
-                            &old_last_page));
-  CATCH(error, THROW(error))
-
-  struct page_header *old_page_header = old_last_page.data;
-  struct page_header *new_page_header = new_page.data;
-  if (page_iterator_has_next(it)) {
-    new_page_header->next = old_page_header->next;
-
-    page_t next_page = PAGE_NULL;
-    TRY(page_manager_get_page(self->page_manager, new_page_header->next,
-                              &next_page));
+  {
+    // create new page and set result
+    page_t new_page = PAGE_NULL;
+    TRY(create_page(self, &new_page, &new_last_page_id));
     CATCH(error, THROW(error))
+    result->data = new_page.data + sizeof(struct page_header);
+  }
 
-    struct page_header *next_page_header = next_page.data;
-    next_page_header->previous = new_last_page_id;
-  } else {
+  page_id_t old_last_page_id;
+  {
+    // get old last page id and update `previous` field in first page
+    page_t first_page = PAGE_NULL;
+    TRY(page_manager_get_page(self->page_manager,
+                              (page_id_t){page_group_id.bytes}, &first_page));
+    CATCH(error, THROW(error))
+    struct page_header *first_page_header = first_page.data;
+    old_last_page_id = first_page_header->previous;
+    first_page_header->previous = new_last_page_id;
+  }
+
+  {
+    // setup newly created page
+    page_t new_page = PAGE_NULL;
+    TRY(page_manager_get_page(self->page_manager, new_last_page_id, &new_page));
+    CATCH(error, THROW(error))
+    struct page_header *new_page_header = new_page.data;
+    new_page_header->previous = old_last_page_id;
     new_page_header->next = PAGE_ID_NULL;
   }
-  old_page_header->next = new_last_page_id;
-  new_page_header->previous = old_last_page_id;
 
+  {
+    // update `next` field in old last page
+    page_t old_page = PAGE_NULL;
+    TRY(page_manager_get_page(self->page_manager, old_last_page_id, &old_page));
+    CATCH(error, THROW(error))
+    struct page_header *old_page_header = old_page.data;
+    old_page_header->next = new_last_page_id;
+  }
   OK;
 }
 
@@ -203,6 +220,8 @@ result_t page_group_manager_create_group(struct page_group_manager *self,
   page_id_t new_page_id = PAGE_ID_NULL;
   TRY(create_page(self, &new_page, &new_page_id));
   CATCH(error, THROW(error))
+  struct page_header *page_header = new_page.data;
+  page_header->previous = new_page_id;
 
   *result = (page_group_id_t){new_page_id.bytes};
   OK;
@@ -322,8 +341,8 @@ void page_group_manager_destroy(struct page_group_manager *self) {
 
 struct page_iterator *
 page_group_manager_get_group(struct page_group_manager *self,
-                             page_group_id_t page_group_id) {
-  return page_iterator_new(self->page_manager, page_group_id);
+                             page_group_id_t page_group_id, bool inverse) {
+  return page_iterator_new(self->page_manager, page_group_id, inverse);
 }
 
 result_t page_group_manager_get_page(struct page_group_manager *self,

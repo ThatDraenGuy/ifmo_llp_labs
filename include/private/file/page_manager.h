@@ -32,6 +32,8 @@ struct cache_entry {
 };
 
 struct page_manager {
+  size_t cache_count;
+  size_t non_cache_count;
   struct page_resolver *page_resolver;
   relevancy_value_t current_most_relevant_value;
   page_id_t last_accessed_page;
