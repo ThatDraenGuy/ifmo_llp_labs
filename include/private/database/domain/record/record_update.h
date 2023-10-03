@@ -5,6 +5,7 @@
 #ifndef LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_UPDATE_H
 #define LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_UPDATE_H
 
+#include "public/database/domain/expression/expression_interface.h"
 #include "public/database/domain/record/record_update.h"
 #include "public/database/domain/record/single_record_holder.h"
 
@@ -13,7 +14,7 @@ struct record_update {
   string_t table_name;
   size_t columns_num;
   struct column_schema **schemas;
-  struct single_record_holder *update_holder;
+  struct i_expression **expressions;
 };
 
 result_t record_update_apply(struct record_update *self, struct record *target);
