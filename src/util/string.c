@@ -10,8 +10,7 @@
 #define ERROR_TYPE "STRING_ERROR"
 enum error_code { INVALID_DATA };
 static const char *const error_messages[] = {
-    [INVALID_DATA] = "" // TODO
-};
+    [INVALID_DATA] = "Cannot create string reference from this data!"};
 
 static struct error *error_self(enum error_code error_code) {
   return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},

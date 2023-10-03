@@ -33,7 +33,6 @@ result_t file_manager_ctor(struct file_manager *self, char *file_name) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
   bool file_exists = access(file_name, F_OK) == 0;
   if (!file_exists) {
-    // TODO think
     FILE *file = fopen(file_name, "w");
     if (file == NULL) {
       free(self);
@@ -69,7 +68,7 @@ result_t file_manager_read(struct file_manager *self, size_t size,
   }
 
   if (fread(data, size, 1, self->file) == 0)
-    THROW(error_self()); // TODO think
+    THROW(error_self());
   OK;
 }
 
@@ -80,7 +79,7 @@ result_t file_manager_write(struct file_manager *self, size_t size,
     THROW(error_self());
 
   if (fwrite(data, size, 1, self->file) == 0)
-    THROW(error_self()); // TODO think
+    THROW(error_self());
   OK;
 }
 

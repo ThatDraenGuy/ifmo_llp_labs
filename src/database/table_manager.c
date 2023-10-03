@@ -121,7 +121,7 @@ static result_t get_next_table_id(struct table_manager *self,
 
   struct meta_contents *meta_contents = meta_contents_item.data;
   *result = meta_contents->next_table_id;
-  meta_contents->next_table_id++; // TODO really think
+  meta_contents->next_table_id++;
   OK;
 }
 

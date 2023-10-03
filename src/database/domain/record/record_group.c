@@ -12,6 +12,18 @@
 #include <stdarg.h>
 
 #define ERROR_SOURCE "RECORD_VIEW"
+#define ERROR_TYPE "RECORD_VIEW_ERROR"
+
+enum error_code { INCORRECT_VALUE_AMOUNT, INCORRECT_VALUE_TYPE };
+
+static const char *const error_messages[] = {
+    [INCORRECT_VALUE_AMOUNT] = "Incorrect value amount!",
+    [INCORRECT_VALUE_TYPE] = "Incorrect value type!"};
+
+static struct error *error_self(enum error_code error_code) {
+  return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},
+                   error_messages[error_code]);
+}
 
 struct record_group *record_group_new() {
   return malloc(sizeof(struct record_group));
@@ -69,7 +81,7 @@ result_t record_group_insert(struct record_group *self, size_t values_num,
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   if (self->column_schema_group.columns_amount != values_num) {
-    // TODO throw error
+    THROW(error_self(INCORRECT_VALUE_AMOUNT));
   }
 
   struct record *record = queue_push_back(self->records, NULL);
@@ -82,7 +94,7 @@ result_t record_group_insert(struct record_group *self, size_t values_num,
 
     struct column_schema *schema = self->column_schema_group.schemas[index];
     if (arg_type != column_schema_get_type(schema)) {
-      // TODO throw error
+      THROW(error_self(INCORRECT_VALUE_TYPE));
     }
 
     column_value_t *value = &record->values[index];

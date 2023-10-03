@@ -166,7 +166,7 @@ result_t page_manager_flush(struct page_manager *self) {
                                    (page_t){entry->contents}));
       CATCH(error, THROW(error))
 
-      entry->relevancy_value = LEAST_RELEVANT_VALUE; // TODO think
+      entry->relevancy_value = LEAST_RELEVANT_VALUE;
       entry->is_altered = false;
     }
   }
