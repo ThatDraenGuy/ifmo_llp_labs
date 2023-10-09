@@ -6,9 +6,10 @@ import matplotlib.pyplot as plt
 
 ORIGINAL_PATH = os.getcwd()
 os.chdir("..")
+os.chdir("..")
 os.chdir("cmake-build-debug")
 CMAKE_BUILD_DIR = os.getcwd()
-TESTS_WORKING_DIR = os.path.join(CMAKE_BUILD_DIR, "tests")
+TESTS_WORKING_DIR = os.path.join(CMAKE_BUILD_DIR, "database", "test", "tests")
 RESULTS_DIR = os.path.join(ORIGINAL_PATH, "results")
 
 
@@ -26,7 +27,7 @@ def prepare_common(batch_num: int, test_name: str):
 
 def prepare_with_populate(batch_num: int, test_name: str):
     prepare_common(batch_num, test_name)
-    call(["../../test/llp_lab_test_stress_insert", str(batch_num)])
+    call(["../../llp_lab_database_test_stress_insert", str(batch_num)])
 
 
 def finish_test():
@@ -39,7 +40,7 @@ def perform_test(batch_num: int, test_name: str, name: str, prepare_func, consta
     start_time = time.time()
     print("\nPerforming test '{0}'; number of records {1}".format(name, batch_num * 1000))
     print("Program output:\n----------------------------")
-    call(["../../test/llp_lab_test_" + test_name, str(10 if constant else batch_num)])
+    call(["../../llp_lab_database_test_" + test_name, str(10 if constant else batch_num)])
     print("----------------------------")
     file_size = os.path.getsize("database")
     run_time = time.time() - start_time
@@ -78,9 +79,7 @@ def test(test_name: str, prepare_func, constant: bool, name=''):
     plt.savefig(name + "_size")
 
 
-os.chdir("..")
-os.chdir(CMAKE_BUILD_DIR)
-os.chdir("tests")
+os.chdir(TESTS_WORKING_DIR)
 print(os.getcwd())
 
 test("stress_insert", prepare_common, False)

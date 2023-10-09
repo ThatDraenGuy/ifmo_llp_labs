@@ -1,5 +1,5 @@
 #setup working dir for all tests
-set(TESTS_WORKING_DIR ${CMAKE_BINARY_DIR}/tests)
+set(TESTS_WORKING_DIR ${CMAKE_CURRENT_BINARY_DIR}/tests)
 file(MAKE_DIRECTORY ${TESTS_WORKING_DIR})
 
 #test project id
