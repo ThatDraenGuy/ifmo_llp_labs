@@ -2,9 +2,9 @@
 // Created by draen on 28.09.23.
 //
 
-#include "private/database/domain/record/single_record_holder.h"
-#include "private/database/domain/record/record.h"
-#include "public/database/domain/table.h"
+#include "database/private/database/domain/record/single_record_holder.h"
+#include "database/private/database/domain/record/record.h"
+#include "database/public/database/domain/table.h"
 #include <malloc.h>
 #include <stdarg.h>
 

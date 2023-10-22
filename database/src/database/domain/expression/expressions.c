@@ -2,7 +2,7 @@
 // Created by draen on 03.10.23.
 //
 
-#include "private/database/domain/expression/expressions.h"
+#include "database/private/database/domain/expression/expressions.h"
 #include <malloc.h>
 
 #define ERROR_SOURCE "EXPRESSION"

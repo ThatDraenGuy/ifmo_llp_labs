@@ -16,9 +16,8 @@ set(TEST_UTIL_HEADERS_DIR ${CMAKE_CURRENT_LIST_DIR}/util_include)
 
 #test util lib
 add_library(${PROJECT_TEST_UTIL_LIB} ${TEST_UTIL_SOURCES})
-target_link_libraries(${PROJECT_TEST_UTIL_LIB} PRIVATE ${PROJECT_LIB})
-target_include_directories(${PROJECT_TEST_UTIL_LIB} PRIVATE ${HEADERS_DIR})
-target_include_directories(${PROJECT_TEST_UTIL_LIB} PRIVATE ${TEST_UTIL_HEADERS_DIR})
+target_link_libraries(${PROJECT_TEST_UTIL_LIB} PRIVATE ${PROJECT_LIB} ${COMMON_LIB})
+target_include_directories(${PROJECT_TEST_UTIL_LIB} PRIVATE ${HEADERS_DIR} ${COMMON_HEADERS} ${TEST_UTIL_HEADERS_DIR})
 
 
 #create a test for each test source
@@ -34,9 +33,8 @@ foreach (TEST_SOURCE ${TEST_SOURCES})
 
     #create test executable
     add_executable(${TEST_ID} ${TEST_SOURCE})
-    target_link_libraries(${TEST_ID} PRIVATE ${PROJECT_LIB} ${PROJECT_TEST_UTIL_LIB})
-    target_include_directories(${TEST_ID} PRIVATE ${HEADERS_DIR})
-    target_include_directories(${TEST_ID} PRIVATE ${TEST_UTIL_HEADERS_DIR})
+    target_link_libraries(${TEST_ID} PRIVATE ${PROJECT_LIB} ${COMMON_LIB} ${PROJECT_TEST_UTIL_LIB})
+    target_include_directories(${TEST_ID} PRIVATE ${HEADERS_DIR} ${COMMON_HEADERS} ${TEST_UTIL_HEADERS_DIR})
 
     if (NOT ${TEST_NAME} MATCHES "^stress.*")
         #setup test

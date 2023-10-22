@@ -2,8 +2,8 @@
 // Created by draen on 19.09.23.
 //
 
-#include "private/database/domain/predicate.h"
-#include "public/error/errors_common.h"
+#include "database/private/database/domain/predicate.h"
+#include "common/public/error/errors_common.h"
 #include <malloc.h>
 
 #define ERROR_SOURCE "PREDICATE"

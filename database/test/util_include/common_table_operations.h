@@ -5,7 +5,7 @@
 #ifndef LLP_LAB_TEST_INCLUDE_CREATE_COMMON_TABLE_H
 #define LLP_LAB_TEST_INCLUDE_CREATE_COMMON_TABLE_H
 
-#include "public/prelude.h"
+#include "database/prelude.h"
 
 STR(TABLE_NAME, "MY_COOL_TABLE")
 STR(ID_COL, "ID")

@@ -2,7 +2,7 @@
 // Created by draen on 29.09.23.
 //
 
-#include "private/database/domain/join.h"
+#include "database/private/database/domain/join.h"
 #include <malloc.h>
 
 struct join *join_of(str_t what, struct predicate *on) {

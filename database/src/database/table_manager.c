@@ -2,18 +2,18 @@
 // Created by draen on 15.09.23.
 //
 
-#include "private/database/table_manager.h"
-#include "private/database/domain/record/record_update.h"
-#include "private/database/domain/record/record_view.h"
-#include "private/database/domain/schema.h"
-#include "private/database/domain/table.h"
-#include "public/database/domain/expression/expression_operators.h"
-#include "public/database/domain/expression/expressions.h"
-#include "public/database/domain/predicate.h"
-#include "public/database/domain/record/record.h"
-#include "public/database/domain/record/single_record_holder.h"
-#include "public/database/record_serialization.h"
-#include "public/error/errors_common.h"
+#include "database/private/database/table_manager.h"
+#include "common/public/error/errors_common.h"
+#include "database/private/database/domain/record/record_update.h"
+#include "database/private/database/domain/record/record_view.h"
+#include "database/private/database/domain/schema.h"
+#include "database/private/database/domain/table.h"
+#include "database/public/database/domain/expression/expression_operators.h"
+#include "database/public/database/domain/expression/expressions.h"
+#include "database/public/database/domain/predicate.h"
+#include "database/public/database/domain/record/record.h"
+#include "database/public/database/domain/record/single_record_holder.h"
+#include "database/public/database/record_serialization.h"
 #include <malloc.h>
 #include <string.h>
 

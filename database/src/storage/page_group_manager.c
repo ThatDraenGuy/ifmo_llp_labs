@@ -2,10 +2,10 @@
 // Created by draen on 10.09.23.
 //
 
-#include "private/storage/page_group_manager.h"
-#include "public/error/errors_common.h"
-#include "public/file/page_manager.h"
-#include "public/file/page_resolver.h"
+#include "database/private/storage/page_group_manager.h"
+#include "common/public/error/errors_common.h"
+#include "database/public/file/page_manager.h"
+#include "database/public/file/page_resolver.h"
 #include <malloc.h>
 
 #define ERROR_SOURCE "PAGE_GROUP_MANAGER"

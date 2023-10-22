@@ -2,9 +2,9 @@
 // Created by draen on 08.09.23.
 //
 
-#include "public/file/file_manager.h"
-#include "private/file/file_manager.h"
-#include "public/error/errors_common.h"
+#include "database/public/file/file_manager.h"
+#include "common/public/error/errors_common.h"
+#include "database/private/file/file_manager.h"
 #include <errno.h>
 #include <malloc.h>
 #include <string.h>

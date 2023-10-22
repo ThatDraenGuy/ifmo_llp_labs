@@ -2,9 +2,9 @@
 // Created by draen on 23.09.23.
 //
 
-#include "private/database/database_manager.h"
-#include "private/database/domain/statement/statement_interface.h"
-#include "public/error/errors_common.h"
+#include "database/private/database/database_manager.h"
+#include "common/public/error/errors_common.h"
+#include "database/private/database/domain/statement/statement_interface.h"
 #include <malloc.h>
 
 #define ERROR_SOURCE "DATABASE_MANAGER"

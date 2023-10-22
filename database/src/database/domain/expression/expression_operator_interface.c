@@ -1,8 +1,8 @@
 //
 // Created by draen on 03.10.23.
 //
-#include "private/database/domain/expression/expression_operator_interface.h"
-#include "public/error/errors_common.h"
+#include "database/private/database/domain/expression/expression_operator_interface.h"
+#include "common/public/error/errors_common.h"
 
 #define ERROR_SOURCE "EXPRESSION_OPERATOR"
 

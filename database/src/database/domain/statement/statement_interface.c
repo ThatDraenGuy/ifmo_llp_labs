@@ -2,8 +2,8 @@
 // Created by draen on 25.09.23.
 //
 
-#include "private/database/domain/statement/statement_interface.h"
-#include "public/error/errors_common.h"
+#include "database/private/database/domain/statement/statement_interface.h"
+#include "common/public/error/errors_common.h"
 #include <malloc.h>
 
 #define ERROR_SOURCE "STATEMENT"

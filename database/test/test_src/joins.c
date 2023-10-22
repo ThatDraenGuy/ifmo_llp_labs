@@ -4,7 +4,7 @@
 
 #include "common_table_operations.h"
 #include "common_test_utils.h"
-#include "public/prelude.h"
+#include "database//prelude.h"
 
 STR(TABLE_NAME_2, "2Table")
 STR(ID_COL_2, "ID")

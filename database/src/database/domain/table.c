@@ -2,7 +2,7 @@
 // Created by draen on 20.09.23.
 //
 
-#include "private/database/domain/table.h"
+#include "database/private/database/domain/table.h"
 #include <malloc.h>
 
 struct table *table_new() { return malloc(sizeof(struct table)); }

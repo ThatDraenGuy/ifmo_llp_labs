@@ -2,9 +2,9 @@
 // Created by draen on 08.09.23.
 //
 
-#include "private/storage/page_data_manager.h"
-#include "public/error/errors_common.h"
-#include "public/storage/page_data_manager.h"
+#include "database/private/storage/page_data_manager.h"
+#include "common/public/error/errors_common.h"
+#include "database/public/storage/page_data_manager.h"
 #include <malloc.h>
 #include <memory.h>
 #include <string.h>

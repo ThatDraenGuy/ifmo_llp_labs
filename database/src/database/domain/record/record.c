@@ -2,8 +2,8 @@
 // Created by draen on 27.09.23.
 //
 
-#include "private/database/domain/record/record.h"
-#include "public/error/errors_common.h"
+#include "database/private/database/domain/record/record.h"
+#include "common/public/error/errors_common.h"
 #include <malloc.h>
 
 #define ERROR_SOURCE "RECORD"

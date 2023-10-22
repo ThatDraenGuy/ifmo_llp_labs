@@ -2,8 +2,8 @@
 // Created by draen on 08.09.23.
 //
 
-#include "private/file/page_resolver.h"
-#include "public/error/errors_common.h"
+#include "database/private/file/page_resolver.h"
+#include "common/public/error/errors_common.h"
 #include <malloc.h>
 #include <memory.h>
 

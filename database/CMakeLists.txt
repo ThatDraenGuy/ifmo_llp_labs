@@ -11,7 +11,8 @@ file(GLOB_RECURSE SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/**.c)
 
 #main project lib
 add_library(${PROJECT_LIB} ${SOURCES})
-target_include_directories(${PROJECT_LIB} PRIVATE ${HEADERS_DIR})
+target_link_libraries(${PROJECT_LIB} PRIVATE ${COMMON_LIB})
+target_include_directories(${PROJECT_LIB} PRIVATE ${HEADERS_DIR} ${COMMON_HEADERS})
 
 
 #windows compatability setup

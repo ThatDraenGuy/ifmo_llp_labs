@@ -5,7 +5,7 @@
 #ifndef LLP_LAB_TEST_INCLUDE_DATABASE_MANAGER_WRAPPER_H
 #define LLP_LAB_TEST_INCLUDE_DATABASE_MANAGER_WRAPPER_H
 
-#include "public/prelude.h"
+#include "database/prelude.h"
 
 #define TEST_ERROR(Message)                                                    \
   error_new("test", "test", (error_code_t){0}, Message)

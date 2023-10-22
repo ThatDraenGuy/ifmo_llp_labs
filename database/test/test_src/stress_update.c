@@ -7,7 +7,7 @@
 
 #include "common_table_operations.h"
 #include "common_test_utils.h"
-#include "public/prelude.h"
+#include "database/prelude.h"
 #include <stdio.h>
 #include <stdlib.h>
 

@@ -2,8 +2,8 @@
 // Created by draen on 20.09.23.
 //
 
-#include "private/database/domain/schema.h"
-#include "public/error/errors_common.h"
+#include "database/private/database/domain/schema.h"
+#include "common/public/error/errors_common.h"
 #include <malloc.h>
 
 #define ERROR_SOURCE "SCHEMA"

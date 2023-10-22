@@ -2,9 +2,9 @@
 // Created by draen on 26.09.23.
 //
 
-#include "public/database/domain/record/record_printer.h"
-#include "private/database/domain/record/record.h"
-#include "public/error/errors_common.h"
+#include "database/public/database/domain/record/record_printer.h"
+#include "common/public/error/errors_common.h"
+#include "database/private/database/domain/record/record.h"
 #include <stdio.h>
 
 #define ERROR_SOURCE "RECORD_PRINTER"

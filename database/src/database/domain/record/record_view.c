@@ -2,9 +2,9 @@
 // Created by draen on 27.09.23.
 //
 
-#include "private/database/domain/record/record_view.h"
-#include "public/database/domain/record/single_record_holder.h"
-#include "public/database/record_serialization.h"
+#include "database/private/database/domain/record/record_view.h"
+#include "database/public/database/domain/record/single_record_holder.h"
+#include "database/public/database/record_serialization.h"
 #include <malloc.h>
 
 // struct table_schema *record_view_get_schema(struct record_view *self) {

@@ -4,7 +4,7 @@
 
 #include "common_table_operations.h"
 #include "common_test_utils.h"
-#include "public/prelude.h"
+#include "database/prelude.h"
 #include <stdio.h>
 
 static result_t test(struct database_manager *database_manager) {
