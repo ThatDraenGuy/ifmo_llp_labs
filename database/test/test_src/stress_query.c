@@ -22,9 +22,9 @@ static result_t test(struct database_manager *database_manager) {
   struct statement_result *result = NULL;
   {
     struct predicate *where = predicate_of(expr_of(
-        column_expr(TABLE_NAME(), STATUS_COL(), COLUMN_TYPE_BOOL),
+        column_expr(TABLE_NAME, STATUS_COL, COLUMN_TYPE_BOOL),
         literal_expr((bool)true), comparison_operator(EQ, COLUMN_TYPE_BOOL)));
-    struct i_statement *query = query_statement_of(TABLE_NAME(), where, 0);
+    struct i_statement *query = query_statement_of(TABLE_NAME, where, 0);
     TRY(database_manager_execute_statement(database_manager, query, &result));
     CATCH(error, THROW(error))
 

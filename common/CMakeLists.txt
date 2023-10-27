@@ -1,10 +1,12 @@
 project(llp_lab_common C)
 
 #project target
-#set(PROJECT_LIB ${PROJECT_NAME}_lib)
+set(COMMON_LIB ${PROJECT_NAME}_lib)
+set(COMMON_LIB ${COMMON_LIB} PARENT_SCOPE)
 
 #project headers dir
-#set(HEADERS_DIR ${CMAKE_CURRENT_LIST_DIR}/include)
+set(COMMON_HEADERS ${CMAKE_CURRENT_LIST_DIR}/include)
+set(COMMON_HEADERS ${COMMON_HEADERS} PARENT_SCOPE)
 
 #project source files
 file(GLOB_RECURSE SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/**.c)

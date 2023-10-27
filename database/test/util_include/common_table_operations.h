@@ -7,10 +7,10 @@
 
 #include "database/prelude.h"
 
-STR(TABLE_NAME, "MY_COOL_TABLE")
-STR(ID_COL, "ID")
-STR(STATUS_COL, "STATUS")
-STR(NUM_COL, "NUM")
+#define TABLE_NAME STR_OF("MY_COOL_TABLE")
+#define ID_COL STR_OF("ID")
+#define STATUS_COL STR_OF("STATUS")
+#define NUM_COL STR_OF("NUM")
 
 struct table_schema *create_common_schema();
 

@@ -5,9 +5,9 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_SCHEMA_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_SCHEMA_H
 
+#include "common/public/domain/column_types.h"
 #include "common/public/util/result.h"
 #include "common/public/util/string.h"
-#include "types.h"
 #include <stdbool.h>
 
 struct column_schema;

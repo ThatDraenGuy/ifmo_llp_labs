@@ -27,7 +27,7 @@ static result_t test(struct database_manager *database_manager) {
                             COLUMN_VALUE((float)id / 3.f));
       }
 
-      struct i_statement *insert = insert_statement_of(TABLE_NAME(), values);
+      struct i_statement *insert = insert_statement_of(TABLE_NAME, values);
       TRY(database_manager_execute_statement(database_manager, insert,
                                              &result));
       CATCH(error, {

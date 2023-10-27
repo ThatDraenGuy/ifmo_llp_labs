@@ -128,31 +128,28 @@ static result_t get_next_table_id(struct table_manager *self,
 static void initialize_meta_tables(struct table_manager *self,
                                    struct meta_contents *meta_contents) {
   struct table_schema *table_data_table_schema = table_schema_new();
-  table_schema_ctor(table_data_table_schema, TABLE_DATA_TABLE_NAME(), 4);
+  table_schema_ctor(table_data_table_schema, TABLE_DATA_TABLE_NAME, 4);
   table_schema_add_column(table_data_table_schema,
-                          TABLE_DATA_TABLE_COLUMN_TABLE_ID(),
-                          COLUMN_TYPE_UINT64);
+                          TABLE_DATA_TABLE_COLUMN_TABLE_ID, COLUMN_TYPE_UINT64);
   table_schema_add_column(table_data_table_schema,
-                          TABLE_DATA_TABLE_COLUMN_TABLE_NAME(),
+                          TABLE_DATA_TABLE_COLUMN_TABLE_NAME,
                           COLUMN_TYPE_STRING);
   table_schema_add_column(table_data_table_schema,
-                          TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID(),
+                          TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID,
                           COLUMN_TYPE_UINT64);
   table_schema_add_column(table_data_table_schema,
-                          TABLE_DATA_TABLE_COLUMN_COLUMNS_AMOUNT(),
+                          TABLE_DATA_TABLE_COLUMN_COLUMNS_AMOUNT,
                           COLUMN_TYPE_UINT64);
 
   struct table_schema *table_columns_table_schema = table_schema_new();
-  table_schema_ctor(table_columns_table_schema, TABLE_COLUMNS_TABLE_NAME(), 3);
+  table_schema_ctor(table_columns_table_schema, TABLE_COLUMNS_TABLE_NAME, 3);
   table_schema_add_column(table_columns_table_schema,
-                          TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID(),
+                          TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID,
                           COLUMN_TYPE_UINT64);
   table_schema_add_column(table_columns_table_schema,
-                          TABLE_COLUMNS_TABLE_COLUMN_NAME(),
-                          COLUMN_TYPE_STRING);
+                          TABLE_COLUMNS_TABLE_COLUMN_NAME, COLUMN_TYPE_STRING);
   table_schema_add_column(table_columns_table_schema,
-                          TABLE_COLUMNS_TABLE_COLUMN_TYPE(),
-                          COLUMN_TYPE_UINT64);
+                          TABLE_COLUMNS_TABLE_COLUMN_TYPE, COLUMN_TYPE_UINT64);
 
   self->table_data_table = table_new();
   table_ctor(self->table_data_table, table_data_table_schema,
@@ -513,7 +510,7 @@ result_t table_manager_create_table(struct table_manager *self,
 
   // try to find a table with requested name
   struct predicate *table_name_equal = predicate_of(expr_of(
-      column_expr(TABLE_DATA_TABLE_NAME(), TABLE_DATA_TABLE_COLUMN_TABLE_NAME(),
+      column_expr(TABLE_DATA_TABLE_NAME, TABLE_DATA_TABLE_COLUMN_TABLE_NAME,
                   COLUMN_TYPE_STRING),
       literal_expr(table_schema_get_name(schema)),
       comparison_operator(EQ, COLUMN_TYPE_STRING)));
@@ -610,7 +607,7 @@ result_t table_manager_get_table(struct table_manager *self, str_t table_name,
 
   // where to find table by name
   struct predicate *table_name_equal = predicate_of(expr_of(
-      column_expr(TABLE_DATA_TABLE_NAME(), TABLE_DATA_TABLE_COLUMN_TABLE_NAME(),
+      column_expr(TABLE_DATA_TABLE_NAME, TABLE_DATA_TABLE_COLUMN_TABLE_NAME,
                   COLUMN_TYPE_STRING),
       literal_expr(table_name), comparison_operator(EQ, COLUMN_TYPE_STRING)));
 
@@ -628,8 +625,8 @@ result_t table_manager_get_table(struct table_manager *self, str_t table_name,
 
   // extract table id from the record
   uint64_t table_id = 0;
-  TRY(record_get(table_data, TABLE_DATA_TABLE_NAME(),
-                 TABLE_DATA_TABLE_COLUMN_TABLE_ID(), &table_id));
+  TRY(record_get(table_data, TABLE_DATA_TABLE_NAME,
+                 TABLE_DATA_TABLE_COLUMN_TABLE_ID, &table_id));
   CATCH(error, {
     single_record_holder_destroy(table_data_holder);
     THROW(error);
@@ -637,8 +634,8 @@ result_t table_manager_get_table(struct table_manager *self, str_t table_name,
 
   // extract page group id from the record
   page_group_id_t table_page_group_id = PAGE_GROUP_ID_NULL;
-  TRY(record_get(table_data, TABLE_DATA_TABLE_NAME(),
-                 TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID(),
+  TRY(record_get(table_data, TABLE_DATA_TABLE_NAME,
+                 TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID,
                  &table_page_group_id.bytes));
   CATCH(error, {
     single_record_holder_destroy(table_data_holder);
@@ -647,8 +644,8 @@ result_t table_manager_get_table(struct table_manager *self, str_t table_name,
 
   // extract columns amount from the record
   uint64_t columns_amount = 0;
-  TRY(record_get(table_data, TABLE_DATA_TABLE_NAME(),
-                 TABLE_DATA_TABLE_COLUMN_COLUMNS_AMOUNT(), &columns_amount));
+  TRY(record_get(table_data, TABLE_DATA_TABLE_NAME,
+                 TABLE_DATA_TABLE_COLUMN_COLUMNS_AMOUNT, &columns_amount));
   CATCH(error, {
     single_record_holder_destroy(table_data_holder);
     THROW(error);
@@ -659,8 +656,8 @@ result_t table_manager_get_table(struct table_manager *self, str_t table_name,
 
   // where to find columns by table id
   struct predicate *table_id_equal = predicate_of(expr_of(
-      column_expr(TABLE_COLUMNS_TABLE_NAME(),
-                  TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID(), COLUMN_TYPE_UINT64),
+      column_expr(TABLE_COLUMNS_TABLE_NAME, TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID,
+                  COLUMN_TYPE_UINT64),
       literal_expr(table_id), comparison_operator(EQ, COLUMN_TYPE_UINT64)));
 
   // find the columns
@@ -685,8 +682,8 @@ result_t table_manager_get_table(struct table_manager *self, str_t table_name,
 
     // extract column type from the record
     uint64_t column_type_index;
-    TRY(record_get(column_data, TABLE_COLUMNS_TABLE_NAME(),
-                   TABLE_COLUMNS_TABLE_COLUMN_TYPE(), &column_type_index));
+    TRY(record_get(column_data, TABLE_COLUMNS_TABLE_NAME,
+                   TABLE_COLUMNS_TABLE_COLUMN_TYPE, &column_type_index));
     CATCH(error, {
       record_view_destroy(columns_view);
       table_schema_destroy(schema);
@@ -696,8 +693,8 @@ result_t table_manager_get_table(struct table_manager *self, str_t table_name,
 
     // extract column name from the record
     str_t column_name;
-    TRY(record_get(column_data, TABLE_COLUMNS_TABLE_NAME(),
-                   TABLE_COLUMNS_TABLE_COLUMN_NAME(), &column_name));
+    TRY(record_get(column_data, TABLE_COLUMNS_TABLE_NAME,
+                   TABLE_COLUMNS_TABLE_COLUMN_NAME, &column_name));
     CATCH(error, {
       record_view_destroy(columns_view);
       table_schema_destroy(schema);
@@ -720,7 +717,7 @@ result_t table_manager_drop_table(struct table_manager *self,
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
   struct predicate *table_name_equal = predicate_of(expr_of(
-      column_expr(TABLE_DATA_TABLE_NAME(), TABLE_DATA_TABLE_COLUMN_TABLE_NAME(),
+      column_expr(TABLE_DATA_TABLE_NAME, TABLE_DATA_TABLE_COLUMN_TABLE_NAME,
                   COLUMN_TYPE_STRING),
       literal_expr(table_name), comparison_operator(EQ, COLUMN_TYPE_STRING)));
 
@@ -736,16 +733,16 @@ result_t table_manager_drop_table(struct table_manager *self,
   struct record *table_data = single_record_holder_get(table_data_holder);
 
   uint64_t table_id = 0;
-  TRY(record_get(table_data, TABLE_DATA_TABLE_NAME(),
-                 TABLE_DATA_TABLE_COLUMN_TABLE_ID(), &table_id));
+  TRY(record_get(table_data, TABLE_DATA_TABLE_NAME,
+                 TABLE_DATA_TABLE_COLUMN_TABLE_ID, &table_id));
   CATCH(error, {
     single_record_holder_destroy(table_data_holder);
     THROW(error);
   })
 
   page_group_id_t group_id = PAGE_GROUP_ID_NULL;
-  TRY(record_get(table_data, TABLE_DATA_TABLE_NAME(),
-                 TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID(), &group_id.bytes));
+  TRY(record_get(table_data, TABLE_DATA_TABLE_NAME,
+                 TABLE_DATA_TABLE_COLUMN_PAGE_GROUP_ID, &group_id.bytes));
   CATCH(error, {
     single_record_holder_destroy(table_data_holder);
     THROW(error);
@@ -753,8 +750,8 @@ result_t table_manager_drop_table(struct table_manager *self,
   single_record_holder_destroy(table_data_holder);
 
   struct predicate *column_delete = predicate_of(expr_of(
-      column_expr(TABLE_COLUMNS_TABLE_NAME(),
-                  TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID(), COLUMN_TYPE_UINT64),
+      column_expr(TABLE_COLUMNS_TABLE_NAME, TABLE_COLUMNS_TABLE_COLUMN_TABLE_ID,
+                  COLUMN_TYPE_UINT64),
       literal_expr(table_id), comparison_operator(EQ, COLUMN_TYPE_UINT64)));
 
   TRY(table_manager_delete(self, self->table_columns_table, column_delete));

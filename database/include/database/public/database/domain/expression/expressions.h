@@ -5,8 +5,8 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_EXPRESSIONS_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_EXPRESSIONS_H
 
+#include "common/public/domain/column_types.h"
 #include "common/public/util/string.h"
-#include "database/public/database/domain/types.h"
 #include "expression_operator_interface.h"
 #include <stdbool.h>
 #include <stdint.h>

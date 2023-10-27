@@ -17,18 +17,17 @@ static result_t test(struct database_manager *database_manager) {
   struct statement_result *result = NULL;
   {
     struct predicate *where = predicate_of(expr_of(
-        column_expr(TABLE_NAME(), STATUS_COL(), COLUMN_TYPE_BOOL),
+        column_expr(TABLE_NAME, STATUS_COL, COLUMN_TYPE_BOOL),
         literal_expr((bool)true), comparison_operator(EQ, COLUMN_TYPE_BOOL)));
 
     struct record_update *values = record_update_new();
     record_update_ctor(
-        values, TABLE_NAME(), 1, NUM_COL(),
-        expr_of(column_expr(TABLE_NAME(), NUM_COL(), COLUMN_TYPE_FLOAT),
+        values, TABLE_NAME, 1, NUM_COL,
+        expr_of(column_expr(TABLE_NAME, NUM_COL, COLUMN_TYPE_FLOAT),
                 literal_expr(-1.f),
                 arithmetic_operator(MUL, COLUMN_TYPE_FLOAT)));
 
-    struct i_statement *update =
-        update_statement_of(TABLE_NAME(), values, where);
+    struct i_statement *update = update_statement_of(TABLE_NAME, values, where);
 
     TRY(database_manager_execute_statement(database_manager, update, &result));
     CATCH(error, THROW(error))

@@ -18,29 +18,36 @@ static struct error *error_self(enum error_code error_code) {
 }
 
 static string_t string_new(const char *data, string_size_t size) {
-  struct string *string = malloc(sizeof(struct string) + size.bytes + 1);
-  memcpy(string->data, data, size.bytes);
-  *(string->data + size.bytes) = '\0';
-  string->size = size;
-  string->capacity = size;
-  return (string_t)string;
+  char *heap_data = malloc(size.bytes + 1);
+  memcpy(heap_data, data, size.bytes + 1);
+  return (string_t){._capacity = size, ._size = size, ._data = heap_data};
 }
 
-string_t str_into(str_t self) { return string_new(self->data, self->size); }
-string_size_t str_len(str_t self) { return self->size; }
-size_t str_size(str_t self) { return sizeof(string_size_t) + self->size.bytes; }
+string_t str_into(str_t self) { return string_new(self._data, self._size); }
+string_size_t str_len(str_t self) { return self._size; }
+size_t str_pack_size(str_t self) {
+  return sizeof(string_size_t) + self._size.bytes;
+}
+
+string_t string_from(char *c_str) {
+  return string_new(c_str, (string_size_t){strlen(c_str)});
+}
 
 result_t str_try_from(void *source, size_t size_limit, str_t *result) {
-  str_t str = (str_t)source;
-  if (str->size.bytes > size_limit)
+  string_size_t size = *(string_size_t *)source;
+
+  if (size.bytes > size_limit)
     THROW(error_self(INVALID_DATA));
 
-  *result = str;
+  char *data = (source + sizeof(string_size_t));
+  *result = (str_t){._size = size, ._data = data};
   OK;
 }
 
 int str_compare(str_t first, str_t second) {
-  int res = strncmp(first->data, second->data, first->size.bytes);
+  string_size_t size_limit =
+      first._size.bytes < second._size.bytes ? first._size : second._size;
+  int res = strncmp(first._data, second._data, size_limit.bytes);
   return res;
 }
 
@@ -48,20 +55,23 @@ bool str_eq(str_t first, str_t second) {
   return str_compare(first, second) == 0;
 }
 
-const char *str_get_c_string(str_t self) { return self->data; }
+const char *str_get_c_string(str_t self) { return self._data; }
 
 str_t string_as_str(string_t self) {
-  return (str_t)((void *)self + offsetof(struct string, size));
+  return (str_t){._size = self._size, ._data = self._data};
 }
 
-size_t string_pack_size(string_t self) { return str_size(string_as_str(self)); }
+size_t string_pack_size(string_t self) {
+  return str_pack_size(string_as_str(self));
+}
 
 void string_pack(string_t self, void *target) {
-  memcpy(target, string_as_str(self), string_pack_size(self));
+  memcpy(target, &self._size, sizeof(string_size_t));
+  memcpy(target + sizeof(string_size_t), self._data, self._size.bytes);
 }
 
 string_t string_clone(string_t self) {
-  return string_new(self->data, self->size);
+  return string_new(self._data, self._size);
 }
 
-void string_destroy(string_t self) { free(self); }
+void string_destroy(string_t self) { free(self._data); }

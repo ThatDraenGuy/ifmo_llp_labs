@@ -12,31 +12,39 @@ typedef struct {
   uint64_t bytes;
 } string_size_t;
 
-struct str;
-typedef struct str *str_t;
+typedef struct {
+  string_size_t _size;
+  char *_data;
+} str_t;
 
-struct string;
-typedef struct string *string_t;
+typedef struct {
+  string_size_t _capacity;
+  string_size_t _size;
+  char *_data;
+} string_t;
 
-#define STR(StrName, String)                                                   \
-  static inline str_t StrName() {                                              \
-    struct str {                                                               \
-      string_size_t size;                                                      \
-      char data[];                                                             \
-    };                                                                         \
-    static struct str __str = {.size = {.bytes = sizeof(String) - 1},          \
-                               .data = String};                                \
-    return (str_t)&__str;                                                      \
-  }
+#define STR_NULL                                                               \
+  (str_t) { ._data = NULL, ._size = 0 }
+
+#define STR_OF(String)                                                         \
+  (str_t) { ._size = {.bytes = sizeof(String) - 1}, ._data = String }
 
 string_t str_into(str_t self);
 string_size_t str_len(str_t self);
-size_t str_size(str_t self);
+size_t str_pack_size(str_t self);
 result_t str_try_from(void *source, size_t size_limit, str_t *result);
 int str_compare(str_t first, str_t second);
 bool str_eq(str_t first, str_t second);
 const char *str_get_c_string(str_t self);
 
+#define STRING_NULL                                                            \
+  (string_t) { ._data = NULL, ._size = 0, ._capacity = 0 }
+
+static inline bool string_is_null(string_t string) {
+  return string._data == NULL;
+}
+
+string_t string_from(char *c_str);
 str_t string_as_str(string_t self);
 string_t string_clone(string_t self);
 void string_append(string_t self, str_t other);

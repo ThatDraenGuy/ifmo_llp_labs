@@ -5,9 +5,9 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_RECORD_GROUP_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_RECORD_GROUP_H
 
+#include "common/public/domain/column_types.h"
 #include "common/public/util/result.h"
 #include "database/public/database/domain/schema.h"
-#include "database/public/database/domain/types.h"
 #include "record.h"
 #include <stdbool.h>
 

@@ -5,7 +5,7 @@
 #ifndef LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_EXPRESSION_OPERATOR_INTERFACE_H
 #define LLP_LAB_INCLUDE_PUBLIC_DATABASE_DOMAIN_EXPRESSION_OPERATOR_INTERFACE_H
 
-#include "database/public/database/domain/types.h"
+#include "common/public/domain/column_types.h"
 
 struct i_expression_operator;
 

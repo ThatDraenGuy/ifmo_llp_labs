@@ -25,9 +25,9 @@ static void clear_record_value(struct record *self, size_t index) {
       self->column_schema_group->schemas[index];
 
   if (column_schema_get_type(column_schema) == COLUMN_TYPE_STRING &&
-      value.string_value != NULL) {
+      string_is_null(value.string_value)) {
     string_destroy(value.string_value);
-    value.string_value = NULL;
+    value.string_value = STRING_NULL;
   }
 }
 

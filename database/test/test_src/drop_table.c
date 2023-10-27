@@ -11,7 +11,7 @@ static result_t test(struct database_manager *database_manager) {
 
   struct statement_result *result = NULL;
   {
-    struct i_statement *drop = drop_table_statement_of(TABLE_NAME());
+    struct i_statement *drop = drop_table_statement_of(TABLE_NAME);
     TRY(database_manager_execute_statement(database_manager, drop, &result));
     CATCH(error, THROW(error))
   }

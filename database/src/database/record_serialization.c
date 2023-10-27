@@ -42,7 +42,7 @@ static result_t read_string(item_t item, size_t *item_offset, str_t *result) {
   TRY(str_try_from(item.data + *item_offset, item.size - *item_offset, result));
   CATCH(error, THROW(error))
 
-  *item_offset += str_size((*result));
+  *item_offset += str_pack_size((*result));
   OK;
 }
 
@@ -82,7 +82,7 @@ static result_t deserialize_column(item_t item, size_t *item_offset,
     CATCH(error, THROW(error))
     break;
   case COLUMN_TYPE_STRING: {
-    str_t value = NULL;
+    str_t value = STR_NULL;
     TRY(read_string(item, item_offset, &value));
     CATCH(error, THROW(error))
 

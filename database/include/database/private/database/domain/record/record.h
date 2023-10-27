@@ -5,8 +5,8 @@
 #ifndef LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_H
 #define LLP_LAB_INCLUDE_PRIVATE_DATABASE_DOMAIN_RECORD_H
 
+#include "common/public/domain/column_types.h"
 #include "database/public/database/domain/record/record.h"
-#include "database/public/database/domain/types.h"
 
 struct record {
   struct column_schema_group *column_schema_group;
