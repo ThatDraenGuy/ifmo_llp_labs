@@ -5,6 +5,6 @@ set(CMAKE_C_STANDARD 11)
 
 add_subdirectory(common)
 add_subdirectory(database)
-add_subdirectory(parser)
+#add_subdirectory(parser)
 add_subdirectory(client)
 enable_testing()
