@@ -65,10 +65,6 @@ struct ast_node_operator_expr {
   struct triple_ast_node node;
 };
 
-struct ast_node_expression_oper {
-  struct simple_ast_node node;
-};
-
 struct ast_node_comparison_oper {
   struct i_ast_node parent;
   comparison_operator_t oper;
@@ -77,6 +73,11 @@ struct ast_node_comparison_oper {
 struct ast_node_arithmetic_oper {
   struct i_ast_node parent;
   arithmetic_operator_t oper;
+};
+
+struct ast_node_logical_oper {
+  struct i_ast_node parent;
+  logical_operator_t oper;
 };
 
 struct ast_node_literal_expr {

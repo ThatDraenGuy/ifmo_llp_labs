@@ -12,6 +12,7 @@ void yy_end_lexical_scan();
 %}
 
 %parse-param { struct parser_ctx *ctx }
+%define parse.error detailed
 
 %code requires {
     #include "parser/private/parser.h"
@@ -41,11 +42,12 @@ void yy_end_lexical_scan();
 %token <node> BOOL
 %token <node> IDENTIFIER
 %token <node> ARITHMETIC_OPERATOR
-%token <node> COMPARISON_OPERATOR
-%token <node> AND_OP
-%token <node> OR_OP
-%token <node> NOT_OP
-%token ';'
+
+%left <node> AND_OP
+%left <node> OR_OP
+%left <node> NOT_OP
+%left <node> COMPARISON_OPERATOR
+
 
 %type <node> statement select_statement from joins join where predicate expression expression_operator literal member_id table_id column_id
 
@@ -62,6 +64,8 @@ select_statement: SELECT from joins where {
     $$ = ast_node_select_stmt_new($2, $3, $4);
 } | SELECT from where {
     $$ = ast_node_select_stmt_new($2, NULL, $3);
+} | SELECT from joins {
+    $$ = ast_node_select_stmt_new($2, $3, NULL);
 } | SELECT from {
     $$ = ast_node_select_stmt_new($2, NULL, NULL);
 };
@@ -89,34 +93,32 @@ predicate: expression {
     $$ = ast_node_predicate_new($1);
 };
 
-expression: expression expression_operator expression {
-    $$ = ast_node_operator_expr_new($1, $2, $3);
+expression: literal {
+    $$ = ast_node_literal_expr_new($1);
+} | member_id {
+    $$ = ast_node_member_expr_new($1);
 } | expression AND_OP expression {
     $$ = ast_node_operator_expr_new($1, $2, $3);
 } | expression OR_OP expression {
     $$ = ast_node_operator_expr_new($1, $2, $3);
 } | NOT_OP expression {
     $$ = ast_node_operator_expr_new($2, $1, NULL);
-} | literal {
-    $$ = $1;
-} | member_id {
-    $$ = ast_node_member_expr_new($1);
+} | expression COMPARISON_OPERATOR expression {
+    $$ = ast_node_operator_expr_new($1, $2, $3);
+} | expression ARITHMETIC_OPERATOR expression {
+    $$ = ast_node_operator_expr_new($1, $2, $3);
+} | '(' expression ')' {
+    $$ = $2;
 };
 
-expression_operator: ARITHMETIC_OPERATOR {
-    $$ = ast_node_expression_oper_new($1);
-} | COMPARISON_OPERATOR {
-    $$ = ast_node_expression_oper_new($1);
-}
-
 literal: INT {
-    $$ = ast_node_literal_expr_new($1);
+    $$ = $1;
 } | FLOAT {
-     $$ = ast_node_literal_expr_new($1);
+    $$ = $1;
 }| STRING {
-    $$ = ast_node_literal_expr_new($1);
+    $$ = $1;
 } | BOOL {
-    $$ = ast_node_literal_expr_new($1);
+    $$ = $1;
 };
 
 member_id: table_id '.' column_id {
@@ -138,24 +140,14 @@ yyerror(struct parser_ctx *ctx, char *fmt, ...)
 {
   #define ERROR_SOURCE STR_OF("PARSER")
   #define ERROR_TYPE STR_OF("PARSER_ERROR")
-  // extern int yylineno;
-  //
-  // va_list ap;
-  // va_start(ap, s);
-  //
-  // fprintf(stderr, "Error at line %d: error: ", yylineno);
-  // vfprintf(stderr, s, ap);
-  // fprintf(stderr, "\n");
 
   va_list args;
   va_start(args, fmt);
   char *buf = malloc(sizeof(char) * 100);
   vsprintf(buf, fmt, args);
 
-  string_t msg = string_from(buf);
-  ctx->error = error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){0}, string_as_str(msg));
-  string_destroy(msg);
-
+  ctx->error = error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){0}, str_of(buf));
+  free(buf);
   ctx->is_error = true;
 }
 

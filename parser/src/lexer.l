@@ -50,9 +50,9 @@ FALSE           { HANDLE_BOOL(false) }
 
 
     /* logical operators */
-AND             { HANDLE_TOKEN(AND_OP) }
-OR              { HANDLE_TOKEN(OR_OP) }
-NOT             { HANDLE_TOKEN(NOT_OP) }
+AND             { HANDLE_LOGICAL(AND, AND_OP) }
+OR              { HANDLE_LOGICAL(OR, OR_OP) }
+NOT             { HANDLE_LOGICAL(NOT, NOT_OP) }
 
 
     /* arithmetic operators */
@@ -71,8 +71,10 @@ NOT             { HANDLE_TOKEN(NOT_OP) }
     /* misc symbols */
 ";"                     { HANDLE_SYMBOL(';') }
 "."                     { HANDLE_SYMBOL('.') }
+"("                     { HANDLE_SYMBOL('(') }
+")"                     { HANDLE_SYMBOL(')') }
 
-.                      { printf("mystery character: %s", yytext); }
+.                      { printf("mystery character: %s\n", yytext); }
 
 %%
 void yy_set_input_string(const char* in) {

@@ -9,5 +9,6 @@
 #include "parser/prelude.h"
 
 int test_statement(str_t statement, struct i_ast_node *expected);
+int test_error(str_t statement);
 
 #endif // LLP_LAB_PARSER_TEST_UTIL_INCLUDE_TEST_STATEMENT_H

@@ -23,7 +23,8 @@ struct i_ast_node *ast_node_from_new(struct i_ast_node *table_id);
 
 struct ast_node_joins;
 struct i_ast_node *ast_node_joins_new();
-void ast_node_joins_add(struct ast_node_joins *self, struct i_ast_node *join);
+struct ast_node_joins *ast_node_joins_add(struct ast_node_joins *self,
+                                          struct i_ast_node *join);
 
 struct ast_node_join_on;
 struct i_ast_node *ast_node_join_on_new(struct i_ast_node *table_id,
@@ -40,14 +41,14 @@ struct i_ast_node *ast_node_operator_expr_new(struct i_ast_node *left_expr,
                                               struct i_ast_node *oper,
                                               struct i_ast_node *right_expr);
 
-struct ast_node_expression_oper;
-struct i_ast_node *ast_node_expression_oper_new(struct i_ast_node *oper);
-
 struct ast_node_comparison_oper;
 struct i_ast_node *ast_node_comparison_oper_new(comparison_operator_t oper);
 
 struct ast_node_arithmetic_oper;
 struct i_ast_node *ast_node_arithmetic_oper_new(arithmetic_operator_t oper);
+
+struct ast_node_logical_oper;
+struct i_ast_node *ast_node_logical_oper_new(logical_operator_t oper);
 
 struct ast_node_literal_expr;
 struct i_ast_node *ast_node_literal_expr_new(struct i_ast_node *value);

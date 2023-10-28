@@ -20,7 +20,10 @@
   yylval.node = ast_node_comparison_oper_new(Operator);                        \
   return COMPARISON_OPERATOR;
 
-#define HANDLE_LOGICAL(Operator) return;
+#define HANDLE_LOGICAL(Operator, LexOperator)                                  \
+  debug_lex(yytext, #LexOperator);                                             \
+  yylval.node = ast_node_logical_oper_new(Operator);                           \
+  return LexOperator;
 
 #define HANDLE_ARITHMETIC(Operator)                                            \
   debug_lex(yytext, #Operator);                                                \

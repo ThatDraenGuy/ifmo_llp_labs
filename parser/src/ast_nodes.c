@@ -253,8 +253,10 @@ struct i_ast_node *ast_node_joins_new() {
   return (struct i_ast_node *)complex_ast_node_new(STR_OF("JOINS LIST"));
 }
 
-void ast_node_joins_add(struct ast_node_joins *self, struct i_ast_node *join) {
+struct ast_node_joins *ast_node_joins_add(struct ast_node_joins *self,
+                                          struct i_ast_node *join) {
   complex_ast_node_add(&self->node, join);
+  return self;
 }
 
 struct i_ast_node *ast_node_join_on_new(struct i_ast_node *table_id,
@@ -277,10 +279,6 @@ struct i_ast_node *ast_node_operator_expr_new(struct i_ast_node *left_expr,
                                               struct i_ast_node *right_expr) {
   return (struct i_ast_node *)triple_ast_node_new(left_expr, oper, right_expr,
                                                   STR_OF("OPERATOR EXPR"));
-}
-
-struct i_ast_node *ast_node_expression_oper_new(struct i_ast_node *oper) {
-  return (struct i_ast_node *)simple_ast_node_new(oper, STR_OF("OPER"));
 }
 
 struct i_ast_node *ast_node_literal_expr_new(struct i_ast_node *value) {
@@ -359,6 +357,7 @@ struct i_ast_node *ast_node_comparison_oper_new(comparison_operator_t oper) {
 
   self->oper = oper;
 
+  self->parent.name = STR_OF("COMPARISON OPER");
   self->parent.equals_impl = ast_node_comparison_oper_equals;
   self->parent.print_at_level_impl = ast_node_comparison_oper_print;
   self->parent.destroy_impl = common_ast_node_destroy;
@@ -411,8 +410,57 @@ struct i_ast_node *ast_node_arithmetic_oper_new(arithmetic_operator_t oper) {
 
   self->oper = oper;
 
+  self->parent.name = STR_OF("ARITHMETIC OPER");
   self->parent.equals_impl = ast_node_arithmetic_oper_equals;
   self->parent.print_at_level_impl = ast_node_arithmetic_oper_print;
+  self->parent.destroy_impl = common_ast_node_destroy;
+
+  return (struct i_ast_node *)self;
+}
+
+// logical_oper
+static bool ast_node_logical_oper_equals(struct i_ast_node *node1,
+                                         struct i_ast_node *node2) {
+  if (!common_ast_node_equals(node1, node2))
+    return false;
+
+  struct ast_node_logical_oper *self = (struct ast_node_logical_oper *)node1;
+  struct ast_node_logical_oper *other = (struct ast_node_logical_oper *)node2;
+
+  return self->oper == other->oper;
+}
+
+static void ast_node_logical_oper_print(struct i_ast_node *node,
+                                        size_t current_level) {
+  struct ast_node_logical_oper *self = (struct ast_node_logical_oper *)node;
+
+  PRINT_INDENT(current_level)
+  char *value = NULL;
+  switch (self->oper) {
+
+  case AND:
+    value = "AND";
+    break;
+  case OR:
+    value = "OR";
+    break;
+  case NOT:
+    value = "NOT";
+    break;
+  }
+
+  printf("LOGICAL OPER: %s\n", value);
+}
+
+struct i_ast_node *ast_node_logical_oper_new(logical_operator_t oper) {
+  struct ast_node_logical_oper *self =
+      malloc(sizeof(struct ast_node_logical_oper));
+
+  self->oper = oper;
+
+  self->parent.name = STR_OF("LOGICAL OPER");
+  self->parent.equals_impl = ast_node_logical_oper_equals;
+  self->parent.print_at_level_impl = ast_node_logical_oper_print;
   self->parent.destroy_impl = common_ast_node_destroy;
 
   return (struct i_ast_node *)self;
@@ -434,7 +482,7 @@ static void ast_node_int_print(struct i_ast_node *node, size_t current_level) {
   struct ast_node_int *self = (struct ast_node_int *)node;
 
   PRINT_INDENT(current_level)
-  printf("INT: %d", self->value);
+  printf("INT: %d\n", self->value);
 }
 
 struct i_ast_node *ast_node_int_new(int32_t value) {
@@ -442,6 +490,7 @@ struct i_ast_node *ast_node_int_new(int32_t value) {
 
   self->value = value;
 
+  self->parent.name = STR_OF("INT");
   self->parent.equals_impl = ast_node_int_equals;
   self->parent.print_at_level_impl = ast_node_int_print;
   self->parent.destroy_impl = common_ast_node_destroy;
@@ -466,7 +515,7 @@ static void ast_node_float_print(struct i_ast_node *node,
   struct ast_node_float *self = (struct ast_node_float *)node;
 
   PRINT_INDENT(current_level)
-  printf("FLOAT: %f", self->value);
+  printf("FLOAT: %f\n", self->value);
 }
 
 struct i_ast_node *ast_node_float_new(float value) {
@@ -474,6 +523,7 @@ struct i_ast_node *ast_node_float_new(float value) {
 
   self->value = value;
 
+  self->parent.name = STR_OF("FLOAT");
   self->parent.equals_impl = ast_node_float_equals;
   self->parent.print_at_level_impl = ast_node_float_print;
   self->parent.destroy_impl = common_ast_node_destroy;
@@ -497,7 +547,7 @@ static void ast_node_bool_print(struct i_ast_node *node, size_t current_level) {
   struct ast_node_bool *self = (struct ast_node_bool *)node;
 
   PRINT_INDENT(current_level)
-  printf("BOOL: %s", self->value ? "TRUE" : "FALSE");
+  printf("BOOL: %s\n", self->value ? "TRUE" : "FALSE");
 }
 
 struct i_ast_node *ast_node_bool_new(bool value) {
@@ -505,6 +555,7 @@ struct i_ast_node *ast_node_bool_new(bool value) {
 
   self->value = value;
 
+  self->parent.name = STR_OF("BOOL");
   self->parent.equals_impl = ast_node_bool_equals;
   self->parent.print_at_level_impl = ast_node_bool_print;
   self->parent.destroy_impl = common_ast_node_destroy;
@@ -529,7 +580,7 @@ static void ast_node_string_print(struct i_ast_node *node,
   struct ast_node_string *self = (struct ast_node_string *)node;
 
   PRINT_INDENT(current_level)
-  printf("STRING: %s", self->value._data);
+  printf("STRING: %s\n", self->value._data);
 }
 
 static void ast_node_string_destroy(struct i_ast_node *node) {
@@ -544,6 +595,7 @@ struct i_ast_node *ast_node_string_new(char *value) {
 
   self->value = string_from(value);
 
+  self->parent.name = STR_OF("STRING");
   self->parent.equals_impl = ast_node_string_equals;
   self->parent.print_at_level_impl = ast_node_string_print;
   self->parent.destroy_impl = ast_node_string_destroy;
@@ -581,6 +633,7 @@ struct i_ast_node *ast_node_id_new(char *value) {
 
   self->id = string_from(value);
 
+  self->parent.name = STR_OF("ID");
   self->parent.equals_impl = ast_node_id_equals;
   self->parent.print_at_level_impl = ast_node_id_print;
   self->parent.destroy_impl = ast_node_id_destroy;
