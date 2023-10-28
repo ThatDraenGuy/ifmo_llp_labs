@@ -5,6 +5,7 @@
 #ifndef LLP_LAB_PARSER_INCLUDE_PARSER_PRELUDE_H
 #define LLP_LAB_PARSER_INCLUDE_PARSER_PRELUDE_H
 
+#include "common/public/error/error_handler.h"
 #include "parser/public/ast_node_interface.h"
 #include "parser/public/parser.h"
 

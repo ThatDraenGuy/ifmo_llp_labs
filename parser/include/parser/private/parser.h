@@ -17,5 +17,4 @@ struct parser_ctx {
   struct error *error;
 };
 
-void parser_ctx_handle_error(struct parser_ctx *self, char *fmt, ...);
 #endif // LLP_LAB_PARSER_INCLUDE_PARSER_PRIVATE_PARSER_H

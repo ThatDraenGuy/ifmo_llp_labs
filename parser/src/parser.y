@@ -7,12 +7,15 @@
 #include "lexer.tab.h"
 
 void yyerror(struct parser_ctx *ctx, char *s, ...);
+void yy_set_input_string(const char* in);
+void yy_end_lexical_scan();
 %}
 
 %parse-param { struct parser_ctx *ctx }
 
 %code requires {
     #include "parser/private/parser.h"
+    int parse_chars(struct parser_ctx *ctx, const char* in);
 }
 
 %union {
@@ -154,4 +157,11 @@ yyerror(struct parser_ctx *ctx, char *fmt, ...)
   string_destroy(msg);
 
   ctx->is_error = true;
+}
+
+int parse_chars(struct parser_ctx *ctx, const char* in) {
+  yy_set_input_string(in);
+  int rv = yyparse(ctx);
+  yy_end_lexical_scan();
+  return rv;
 }

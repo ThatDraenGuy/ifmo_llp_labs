@@ -1,3 +1,6 @@
+set(TEST_PREFIX DATABASE)
+
+
 #setup working dir for all tests
 set(TESTS_WORKING_DIR ${CMAKE_CURRENT_BINARY_DIR}/tests)
 file(MAKE_DIRECTORY ${TESTS_WORKING_DIR})
@@ -23,8 +26,8 @@ target_include_directories(${PROJECT_TEST_UTIL_LIB} PRIVATE ${HEADERS_DIR} ${COM
 #create a test for each test source
 foreach (TEST_SOURCE ${TEST_SOURCES})
     #get test name
-    get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
-
+    get_filename_component(TEST_FILE_NAME ${TEST_SOURCE} NAME_WE)
+    set(TEST_NAME ${TEST_PREFIX}_${TEST_FILE_NAME})
 
     #setup test executable id & working dir
     set(TEST_ID ${PROJECT_TEST}_${TEST_NAME})
@@ -36,7 +39,7 @@ foreach (TEST_SOURCE ${TEST_SOURCES})
     target_link_libraries(${TEST_ID} PRIVATE ${PROJECT_LIB} ${COMMON_LIB} ${PROJECT_TEST_UTIL_LIB})
     target_include_directories(${TEST_ID} PRIVATE ${HEADERS_DIR} ${COMMON_HEADERS} ${TEST_UTIL_HEADERS_DIR})
 
-    if (NOT ${TEST_NAME} MATCHES "^stress.*")
+    if (NOT ${TEST_NAME} MATCHES "^.*xstress.*")
         #setup test
         add_test(
                 NAME ${TEST_NAME}

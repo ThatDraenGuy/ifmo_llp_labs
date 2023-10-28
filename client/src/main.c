@@ -5,9 +5,10 @@
 #include "common/public/error/error_handler.h"
 #include "parser/prelude.h"
 #include <stddef.h>
+
 int main() {
   struct i_ast_node *tree = NULL;
-  TRY(parse(&tree));
+  TRY(parse_stdin(&tree));
   CATCH(error, {
     handle_error(error);
     return 1;

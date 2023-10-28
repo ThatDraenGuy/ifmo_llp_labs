@@ -75,3 +75,10 @@ NOT             { HANDLE_TOKEN(NOT_OP) }
 .                      { printf("mystery character: %s", yytext); }
 
 %%
+void yy_set_input_string(const char* in) {
+  yy_scan_string(in);
+}
+
+void yy_end_lexical_scan() {
+  yy_delete_buffer(YY_CURRENT_BUFFER);
+}

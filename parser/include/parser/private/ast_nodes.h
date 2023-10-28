@@ -13,14 +13,12 @@
 struct simple_ast_node {
   struct i_ast_node parent;
   struct i_ast_node *child;
-  str_t name;
 };
 
 struct double_ast_node {
   struct i_ast_node parent;
   struct i_ast_node *left;
   struct i_ast_node *right;
-  str_t name;
 };
 
 struct triple_ast_node {
@@ -28,13 +26,11 @@ struct triple_ast_node {
   struct i_ast_node *left;
   struct i_ast_node *mid;
   struct i_ast_node *right;
-  str_t name;
 };
 
 struct complex_ast_node {
   struct i_ast_node parent;
   struct queue *children;
-  str_t name;
 };
 
 struct ast_node_stmt {

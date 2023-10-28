@@ -10,16 +10,30 @@
     printf("\t");                                                              \
   }
 
-static void print_placeholder(struct i_ast_node *node, size_t current_level) {}
-
+static bool common_ast_node_equals(struct i_ast_node *self,
+                                   struct i_ast_node *other) {
+  return str_eq(self->name, other->name);
+}
 static void common_ast_node_destroy(struct i_ast_node *node) { free(node); }
 
 // simple_ast_node
-static void simple_node_print(struct i_ast_node *node, size_t current_level) {
+static bool simple_ast_node_equals(struct i_ast_node *node1,
+                                   struct i_ast_node *node2) {
+  if (!common_ast_node_equals(node1, node2))
+    return false;
+
+  struct simple_ast_node *self = (struct simple_ast_node *)node1;
+  struct simple_ast_node *other = (struct simple_ast_node *)node2;
+
+  return ast_node_equals(self->child, other->child);
+}
+
+static void simple_ast_node_print(struct i_ast_node *node,
+                                  size_t current_level) {
   struct simple_ast_node *self = (struct simple_ast_node *)node;
 
   PRINT_INDENT(current_level)
-  printf("%s:\n", self->name._data);
+  printf("%s:\n", self->parent.name._data);
   ast_node_print_at_level(self->child, current_level + 1);
 }
 static void simple_ast_node_destroy(struct i_ast_node *node) {
@@ -34,20 +48,33 @@ static struct simple_ast_node *simple_ast_node_new(struct i_ast_node *child,
   struct simple_ast_node *self = malloc(sizeof(struct simple_ast_node));
 
   self->child = child;
-  self->name = name;
+  self->parent.name = name;
 
-  self->parent.print_at_level_impl = simple_node_print;
+  self->parent.equals_impl = simple_ast_node_equals;
+  self->parent.print_at_level_impl = simple_ast_node_print;
   self->parent.destroy_impl = simple_ast_node_destroy;
   return self;
 }
 
 // double_ast_node
+static bool double_ast_node_equals(struct i_ast_node *node1,
+                                   struct i_ast_node *node2) {
+  if (!common_ast_node_equals(node1, node2))
+    return false;
+
+  struct double_ast_node *self = (struct double_ast_node *)node1;
+  struct double_ast_node *other = (struct double_ast_node *)node2;
+
+  return ast_node_equals(self->left, other->left) &&
+         ast_node_equals(self->right, other->right);
+}
+
 static void double_ast_node_print(struct i_ast_node *node,
                                   size_t current_level) {
   struct double_ast_node *self = (struct double_ast_node *)node;
 
   PRINT_INDENT(current_level)
-  printf("%s:\n", self->name._data);
+  printf("%s:\n", self->parent.name._data);
 
   ast_node_print_at_level(self->left, current_level + 1);
   ast_node_print_at_level(self->right, current_level + 1);
@@ -68,20 +95,34 @@ static struct double_ast_node *double_ast_node_new(struct i_ast_node *left,
 
   self->left = left;
   self->right = right;
-  self->name = name;
+  self->parent.name = name;
 
+  self->parent.equals_impl = double_ast_node_equals;
   self->parent.print_at_level_impl = double_ast_node_print;
   self->parent.destroy_impl = double_ast_node_destroy;
   return self;
 }
 
 // triple_ast_node
+static bool triple_ast_node_equals(struct i_ast_node *node1,
+                                   struct i_ast_node *node2) {
+  if (!common_ast_node_equals(node1, node2))
+    return false;
+
+  struct triple_ast_node *self = (struct triple_ast_node *)node1;
+  struct triple_ast_node *other = (struct triple_ast_node *)node2;
+
+  return ast_node_equals(self->left, other->left) &&
+         ast_node_equals(self->mid, other->mid) &&
+         ast_node_equals(self->right, other->right);
+}
+
 static void triple_ast_node_print(struct i_ast_node *node,
                                   size_t current_level) {
   struct triple_ast_node *self = (struct triple_ast_node *)node;
 
   PRINT_INDENT(current_level)
-  printf("%s:\n", self->name._data);
+  printf("%s:\n", self->parent.name._data);
 
   ast_node_print_at_level(self->left, current_level + 1);
   ast_node_print_at_level(self->mid, current_level + 1);
@@ -106,20 +147,51 @@ static struct triple_ast_node *triple_ast_node_new(struct i_ast_node *left,
   self->left = left;
   self->mid = mid;
   self->right = right;
-  self->name = name;
+  self->parent.name = name;
 
+  self->parent.equals_impl = triple_ast_node_equals;
   self->parent.print_at_level_impl = triple_ast_node_print;
   self->parent.destroy_impl = triple_ast_node_destroy;
   return self;
 }
 
 // complex_ast_node
+static bool complex_ast_node_equals(struct i_ast_node *node1,
+                                    struct i_ast_node *node2) {
+  if (!common_ast_node_equals(node1, node2))
+    return false;
+
+  struct complex_ast_node *self = (struct complex_ast_node *)node1;
+  struct complex_ast_node *other = (struct complex_ast_node *)node2;
+
+  struct queue_iterator *it_self = queue_get_entries(self->children);
+  struct queue_iterator *it_other = queue_get_entries(other->children);
+
+  while (queue_iterator_has_next(it_self) &&
+         queue_iterator_has_next(it_other)) {
+    struct i_ast_node **child_self = NULL;
+    queue_iterator_next(it_self, (void **)&child_self);
+
+    struct i_ast_node **child_other = NULL;
+    queue_iterator_next(it_other, (void **)&child_other);
+
+    if (!ast_node_equals(*child_self, *child_other)) {
+      queue_iterator_destroy(it_self);
+      queue_iterator_destroy(it_other);
+      return false;
+    }
+  }
+  if (queue_iterator_has_next(it_self) || queue_iterator_has_next(it_other))
+    return false;
+  return true;
+}
+
 static void complex_ast_node_print(struct i_ast_node *node,
                                    size_t current_level) {
   struct complex_ast_node *self = (struct complex_ast_node *)node;
 
   PRINT_INDENT(current_level)
-  printf("%s:\n", self->name._data);
+  printf("%s:\n", self->parent.name._data);
 
   struct queue_iterator *it = queue_get_entries(self->children);
   while (queue_iterator_has_next(it)) {
@@ -145,11 +217,12 @@ static void complex_ast_node_destroy(struct i_ast_node *node) {
 static struct complex_ast_node *complex_ast_node_new(str_t name) {
   struct complex_ast_node *self = malloc(sizeof(struct complex_ast_node));
 
-  self->name = name;
+  self->parent.name = name;
   self->children = queue_new();
   queue_ctor(self->children, sizeof(void *),
              complex_ast_node_destroy_child_entry);
 
+  self->parent.equals_impl = complex_ast_node_equals;
   self->parent.print_at_level_impl = complex_ast_node_print;
   self->parent.destroy_impl = complex_ast_node_destroy;
   return self;
@@ -236,6 +309,19 @@ struct i_ast_node *ast_node_column_id_new(struct i_ast_node *identifier) {
 }
 
 // comparison_oper
+static bool ast_node_comparison_oper_equals(struct i_ast_node *node1,
+                                            struct i_ast_node *node2) {
+  if (!common_ast_node_equals(node1, node2))
+    return false;
+
+  struct ast_node_comparison_oper *self =
+      (struct ast_node_comparison_oper *)node1;
+  struct ast_node_comparison_oper *other =
+      (struct ast_node_comparison_oper *)node2;
+
+  return self->oper == other->oper;
+}
+
 static void ast_node_comparison_oper_print(struct i_ast_node *node,
                                            size_t current_level) {
   struct ast_node_comparison_oper *self =
@@ -273,6 +359,7 @@ struct i_ast_node *ast_node_comparison_oper_new(comparison_operator_t oper) {
 
   self->oper = oper;
 
+  self->parent.equals_impl = ast_node_comparison_oper_equals;
   self->parent.print_at_level_impl = ast_node_comparison_oper_print;
   self->parent.destroy_impl = common_ast_node_destroy;
 
@@ -280,6 +367,19 @@ struct i_ast_node *ast_node_comparison_oper_new(comparison_operator_t oper) {
 }
 
 // arithmetic_oper
+static bool ast_node_arithmetic_oper_equals(struct i_ast_node *node1,
+                                            struct i_ast_node *node2) {
+  if (!common_ast_node_equals(node1, node2))
+    return false;
+
+  struct ast_node_arithmetic_oper *self =
+      (struct ast_node_arithmetic_oper *)node1;
+  struct ast_node_arithmetic_oper *other =
+      (struct ast_node_arithmetic_oper *)node2;
+
+  return self->oper == other->oper;
+}
+
 static void ast_node_arithmetic_oper_print(struct i_ast_node *node,
                                            size_t current_level) {
   struct ast_node_arithmetic_oper *self =
@@ -311,6 +411,7 @@ struct i_ast_node *ast_node_arithmetic_oper_new(arithmetic_operator_t oper) {
 
   self->oper = oper;
 
+  self->parent.equals_impl = ast_node_arithmetic_oper_equals;
   self->parent.print_at_level_impl = ast_node_arithmetic_oper_print;
   self->parent.destroy_impl = common_ast_node_destroy;
 
@@ -318,6 +419,17 @@ struct i_ast_node *ast_node_arithmetic_oper_new(arithmetic_operator_t oper) {
 }
 
 // int
+static bool ast_node_int_equals(struct i_ast_node *node1,
+                                struct i_ast_node *node2) {
+  if (!common_ast_node_equals(node1, node2))
+    return false;
+
+  struct ast_node_int *self = (struct ast_node_int *)node1;
+  struct ast_node_int *other = (struct ast_node_int *)node2;
+
+  return self->value == other->value;
+}
+
 static void ast_node_int_print(struct i_ast_node *node, size_t current_level) {
   struct ast_node_int *self = (struct ast_node_int *)node;
 
@@ -330,6 +442,7 @@ struct i_ast_node *ast_node_int_new(int32_t value) {
 
   self->value = value;
 
+  self->parent.equals_impl = ast_node_int_equals;
   self->parent.print_at_level_impl = ast_node_int_print;
   self->parent.destroy_impl = common_ast_node_destroy;
 
@@ -337,6 +450,17 @@ struct i_ast_node *ast_node_int_new(int32_t value) {
 }
 
 // float
+static bool ast_node_float_equals(struct i_ast_node *node1,
+                                  struct i_ast_node *node2) {
+  if (!common_ast_node_equals(node1, node2))
+    return false;
+
+  struct ast_node_float *self = (struct ast_node_float *)node1;
+  struct ast_node_float *other = (struct ast_node_float *)node2;
+
+  return self->value == other->value; // TODO think
+}
+
 static void ast_node_float_print(struct i_ast_node *node,
                                  size_t current_level) {
   struct ast_node_float *self = (struct ast_node_float *)node;
@@ -350,6 +474,7 @@ struct i_ast_node *ast_node_float_new(float value) {
 
   self->value = value;
 
+  self->parent.equals_impl = ast_node_float_equals;
   self->parent.print_at_level_impl = ast_node_float_print;
   self->parent.destroy_impl = common_ast_node_destroy;
 
@@ -357,6 +482,17 @@ struct i_ast_node *ast_node_float_new(float value) {
 }
 
 // bool
+static bool ast_node_bool_equals(struct i_ast_node *node1,
+                                 struct i_ast_node *node2) {
+  if (!common_ast_node_equals(node1, node2))
+    return false;
+
+  struct ast_node_bool *self = (struct ast_node_bool *)node1;
+  struct ast_node_bool *other = (struct ast_node_bool *)node2;
+
+  return self->value == other->value;
+}
+
 static void ast_node_bool_print(struct i_ast_node *node, size_t current_level) {
   struct ast_node_bool *self = (struct ast_node_bool *)node;
 
@@ -369,6 +505,7 @@ struct i_ast_node *ast_node_bool_new(bool value) {
 
   self->value = value;
 
+  self->parent.equals_impl = ast_node_bool_equals;
   self->parent.print_at_level_impl = ast_node_bool_print;
   self->parent.destroy_impl = common_ast_node_destroy;
 
@@ -376,6 +513,17 @@ struct i_ast_node *ast_node_bool_new(bool value) {
 }
 
 // string
+static bool ast_node_string_equals(struct i_ast_node *node1,
+                                   struct i_ast_node *node2) {
+  if (!common_ast_node_equals(node1, node2))
+    return false;
+
+  struct ast_node_string *self = (struct ast_node_string *)node1;
+  struct ast_node_string *other = (struct ast_node_string *)node2;
+
+  return str_eq(string_as_str(self->value), string_as_str(other->value));
+}
+
 static void ast_node_string_print(struct i_ast_node *node,
                                   size_t current_level) {
   struct ast_node_string *self = (struct ast_node_string *)node;
@@ -396,12 +544,24 @@ struct i_ast_node *ast_node_string_new(char *value) {
 
   self->value = string_from(value);
 
+  self->parent.equals_impl = ast_node_string_equals;
   self->parent.print_at_level_impl = ast_node_string_print;
   self->parent.destroy_impl = ast_node_string_destroy;
   return (struct i_ast_node *)self;
 }
 
 // id
+static bool ast_node_id_equals(struct i_ast_node *node1,
+                               struct i_ast_node *node2) {
+  if (!common_ast_node_equals(node1, node2))
+    return false;
+
+  struct ast_node_id *self = (struct ast_node_id *)node1;
+  struct ast_node_id *other = (struct ast_node_id *)node2;
+
+  return str_eq(string_as_str(self->id), string_as_str(other->id));
+}
+
 static void ast_node_id_print(struct i_ast_node *node, size_t current_level) {
   struct ast_node_id *self = (struct ast_node_id *)node;
 
@@ -421,6 +581,7 @@ struct i_ast_node *ast_node_id_new(char *value) {
 
   self->id = string_from(value);
 
+  self->parent.equals_impl = ast_node_id_equals;
   self->parent.print_at_level_impl = ast_node_id_print;
   self->parent.destroy_impl = ast_node_id_destroy;
   return (struct i_ast_node *)self;
