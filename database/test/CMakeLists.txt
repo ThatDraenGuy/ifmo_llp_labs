@@ -39,7 +39,7 @@ foreach (TEST_SOURCE ${TEST_SOURCES})
     target_link_libraries(${TEST_ID} PRIVATE ${PROJECT_LIB} ${COMMON_LIB} ${PROJECT_TEST_UTIL_LIB})
     target_include_directories(${TEST_ID} PRIVATE ${HEADERS_DIR} ${COMMON_HEADERS} ${TEST_UTIL_HEADERS_DIR})
 
-    if (NOT ${TEST_NAME} MATCHES "^.*xstress.*")
+    if (NOT ${TEST_FILE_NAME} MATCHES "^stress.*")
         #setup test
         add_test(
                 NAME ${TEST_NAME}
