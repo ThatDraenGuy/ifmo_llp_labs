@@ -41,6 +41,33 @@ struct ast_node_select_stmt {
   struct triple_ast_node node;
 };
 
+struct ast_node_insert_stmt {
+  struct double_ast_node node;
+};
+
+struct ast_node_update_stmt {
+  struct triple_ast_node node;
+};
+
+struct ast_node_delete_stmt {
+  struct double_ast_node node;
+};
+
+struct ast_node_updates {
+  struct complex_ast_node node;
+};
+struct ast_node_update {
+  struct double_ast_node node;
+};
+
+struct ast_node_values_list {
+  struct complex_ast_node node;
+};
+
+struct ast_node_values {
+  struct complex_ast_node node;
+};
+
 struct ast_node_from {
   struct simple_ast_node node;
 };

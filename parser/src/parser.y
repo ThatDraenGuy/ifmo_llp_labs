@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "parser/private/parser.h"
-#include "parser/public/ast_nodes.h"
+#include "parser/private/ast_nodes.h"
 #include "lexer.tab.h"
 
 void yyerror(struct parser_ctx *ctx, char *s, ...);
@@ -49,11 +49,26 @@ void yy_end_lexical_scan();
 %left <node> COMPARISON_OPERATOR
 
 
-%type <node> statement select_statement from joins join where predicate expression expression_operator literal member_id table_id column_id
+%type <node> statement select_statement insert_statement update_statement delete_statement updates update values_list values from joins join where predicate expression literal member_id table_id column_id
 
 %%
 
 statement: select_statement ';' {
+    $$ = ast_node_stmt_new($1);
+    ctx->root = $$;
+    ctx->is_error = false;
+    YYACCEPT;
+} | insert_statement ';' {
+     $$ = ast_node_stmt_new($1);
+     ctx->root = $$;
+     ctx->is_error = false;
+     YYACCEPT;
+} | update_statement ';' {
+      $$ = ast_node_stmt_new($1);
+      ctx->root = $$;
+      ctx->is_error = false;
+      YYACCEPT;
+ } | delete_statement ';' {
     $$ = ast_node_stmt_new($1);
     ctx->root = $$;
     ctx->is_error = false;
@@ -68,6 +83,51 @@ select_statement: SELECT from joins where {
     $$ = ast_node_select_stmt_new($2, $3, NULL);
 } | SELECT from {
     $$ = ast_node_select_stmt_new($2, NULL, NULL);
+};
+
+insert_statement: INSERT_INTO table_id VALUES values_list {
+    $$ = ast_node_insert_stmt_new($2, $4);
+}
+
+update_statement: UPDATE table_id SET updates where {
+    $$ = ast_node_update_stmt_new($2, $4, $5);
+} | UPDATE table_id SET updates {
+    $$ = ast_node_update_stmt_new($2, $4, NULL);
+}
+
+delete_statement: DELETE from where {
+    $$ = ast_node_delete_stmt_new($2, $3);
+} | DELETE from {
+    $$ = ast_node_delete_stmt_new($2, NULL);
+};
+
+updates: update {
+    $$ = ast_node_updates_new();
+    ast_node_updates_add((struct ast_node_updates *)$$, $1);
+} | updates ',' update {
+    ast_node_updates_add((struct ast_node_updates *)$$, $3);
+}
+
+update: column_id COMPARISON_OPERATOR expression {
+    if (((struct ast_node_comparison_oper *)$2)->oper != EQ) {
+        yyerror(ctx, "bad comparison MAYBE FIX ME");
+        YYABORT;
+    }
+    $$ = ast_node_update_new($1, $3);
+}
+
+values_list: '(' values ')' {
+    $$ = ast_node_values_list_new();
+    ast_node_values_list_add((struct ast_node_values_list *)$$, $2);
+} | values_list ',' '(' values ')' {
+    ast_node_values_list_add((struct ast_node_values_list *)$$, $4);
+};
+
+values: literal {
+    $$ = ast_node_values_new();
+    ast_node_values_add((struct ast_node_values *)$$, $1);
+} | values ',' literal {
+    ast_node_values_add((struct ast_node_values *)$$, $3);
 };
 
 from: FROM table_id {

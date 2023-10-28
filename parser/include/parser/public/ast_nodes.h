@@ -18,6 +18,39 @@ struct i_ast_node *ast_node_select_stmt_new(struct i_ast_node *from,
                                             struct i_ast_node *joins,
                                             struct i_ast_node *where);
 
+struct ast_node_insert_stmt;
+struct i_ast_node *ast_node_insert_stmt_new(struct i_ast_node *table_id,
+                                            struct i_ast_node *values_list);
+
+struct ast_node_update_stmt;
+struct i_ast_node *ast_node_update_stmt_new(struct i_ast_node *table_id,
+                                            struct i_ast_node *updates,
+                                            struct i_ast_node *where);
+
+struct ast_node_delete_stmt;
+struct i_ast_node *ast_node_delete_stmt_new(struct i_ast_node *from,
+                                            struct i_ast_node *where);
+
+struct ast_node_updates;
+struct i_ast_node *ast_node_updates_new();
+struct ast_node_updates *ast_node_updates_add(struct ast_node_updates *self,
+                                              struct i_ast_node *update);
+
+struct ast_node_update;
+struct i_ast_node *ast_node_update_new(struct i_ast_node *column_id,
+                                       struct i_ast_node *expression);
+
+struct ast_node_values_list;
+struct i_ast_node *ast_node_values_list_new();
+struct ast_node_values_list *
+ast_node_values_list_add(struct ast_node_values_list *self,
+                         struct i_ast_node *values);
+
+struct ast_node_values;
+struct i_ast_node *ast_node_values_new();
+struct ast_node_values *ast_node_values_add(struct ast_node_values *self,
+                                            struct i_ast_node *expr);
+
 struct ast_node_from;
 struct i_ast_node *ast_node_from_new(struct i_ast_node *table_id);
 

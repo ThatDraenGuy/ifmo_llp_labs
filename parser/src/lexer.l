@@ -73,6 +73,7 @@ NOT             { HANDLE_LOGICAL(NOT, NOT_OP) }
 "."                     { HANDLE_SYMBOL('.') }
 "("                     { HANDLE_SYMBOL('(') }
 ")"                     { HANDLE_SYMBOL(')') }
+","                     { HANDLE_SYMBOL(',') }
 
 .                      { printf("mystery character: %s\n", yytext); }
 

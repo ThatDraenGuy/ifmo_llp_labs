@@ -245,6 +245,59 @@ struct i_ast_node *ast_node_select_stmt_new(struct i_ast_node *from,
                                                   STR_OF("SELECT STATEMENT"));
 }
 
+struct i_ast_node *ast_node_insert_stmt_new(struct i_ast_node *table_id,
+                                            struct i_ast_node *values_list) {
+  return (struct i_ast_node *)double_ast_node_new(table_id, values_list,
+                                                  STR_OF("INSERT STATEMENT"));
+}
+
+struct i_ast_node *ast_node_update_stmt_new(struct i_ast_node *table_id,
+                                            struct i_ast_node *updates,
+                                            struct i_ast_node *where) {
+  return (struct i_ast_node *)triple_ast_node_new(table_id, updates, where,
+                                                  STR_OF("UPDATE STATEMENT"));
+}
+
+struct i_ast_node *ast_node_delete_stmt_new(struct i_ast_node *from,
+                                            struct i_ast_node *where) {
+  return (struct i_ast_node *)double_ast_node_new(from, where,
+                                                  STR_OF("DELETE STATEMENT"));
+}
+
+struct i_ast_node *ast_node_updates_new() {
+  return (struct i_ast_node *)complex_ast_node_new(STR_OF("UPDATES"));
+}
+struct ast_node_updates *ast_node_updates_add(struct ast_node_updates *self,
+                                              struct i_ast_node *update) {
+  complex_ast_node_add(&self->node, update);
+  return self;
+}
+
+struct i_ast_node *ast_node_update_new(struct i_ast_node *column_id,
+                                       struct i_ast_node *expression) {
+  return (struct i_ast_node *)double_ast_node_new(column_id, expression,
+                                                  STR_OF("UPDATE"));
+}
+
+struct i_ast_node *ast_node_values_list_new() {
+  return (struct i_ast_node *)complex_ast_node_new(STR_OF("VALUES LIST"));
+}
+struct ast_node_values_list *
+ast_node_values_list_add(struct ast_node_values_list *self,
+                         struct i_ast_node *values) {
+  complex_ast_node_add(&self->node, values);
+  return self;
+}
+
+struct i_ast_node *ast_node_values_new() {
+  return (struct i_ast_node *)complex_ast_node_new(STR_OF("VALUES"));
+}
+struct ast_node_values *ast_node_values_add(struct ast_node_values *self,
+                                            struct i_ast_node *expr) {
+  complex_ast_node_add(&self->node, expr);
+  return self;
+}
+
 struct i_ast_node *ast_node_from_new(struct i_ast_node *table_id) {
   return (struct i_ast_node *)simple_ast_node_new(table_id, STR_OF("FROM"));
 }
