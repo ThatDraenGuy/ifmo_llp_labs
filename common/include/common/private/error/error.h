@@ -8,10 +8,10 @@
 #include "common/public/error/error.h"
 
 struct error {
-  char *error_source;
-  char *error_type;
+  string_t error_source;
+  string_t error_type;
   error_code_t error_code;
-  char *error_message;
+  string_t error_message;
 };
 
 #endif // LLP_LAB_COMMON_INCLUDE_COMMON_PRIVATE_ERROR_ERROR_H

@@ -18,13 +18,12 @@ typedef enum {
   ERR_INDEX_OUT_OF_BOUNDS
 } common_error_code_t;
 
-extern const char *const common_error_type;
+extern const str_t common_error_type;
 
-extern const char *const common_error_messages[];
+extern const str_t common_error_messages[];
 
 static inline struct error *
-error_common(const char *const error_source,
-             common_error_code_t common_error_code) {
+error_common(str_t error_source, common_error_code_t common_error_code) {
   return error_new(error_source, common_error_type,
                    (error_code_t){common_error_code},
                    common_error_messages[common_error_code]);

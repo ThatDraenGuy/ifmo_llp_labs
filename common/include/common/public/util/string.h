@@ -5,17 +5,22 @@
 #ifndef LLP_LAB_COMMON_INCLUDE_COMMON_PUBLIC_UTIL_STRING_H
 #define LLP_LAB_COMMON_INCLUDE_COMMON_PUBLIC_UTIL_STRING_H
 
+typedef struct s_str str_t;
+
 #include "result.h"
+#include "stdbool.h"
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 typedef struct {
   uint64_t bytes;
 } string_size_t;
 
-typedef struct {
+struct s_str {
   string_size_t _size;
   char *_data;
-} str_t;
+};
 
 typedef struct {
   string_size_t _capacity;
@@ -29,6 +34,7 @@ typedef struct {
 #define STR_OF(String)                                                         \
   (str_t) { ._size = {.bytes = sizeof(String) - 1}, ._data = String }
 
+str_t str_of(char *c_str);
 string_t str_into(str_t self);
 string_size_t str_len(str_t self);
 size_t str_pack_size(str_t self);

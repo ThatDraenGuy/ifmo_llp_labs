@@ -8,8 +8,8 @@
 #include "database/public/file/page_resolver.h"
 #include <malloc.h>
 
-#define ERROR_SOURCE "PAGE_GROUP_MANAGER"
-#define ITERATOR_ERROR_SOURCE "PAGE_ITERATOR"
+#define ERROR_SOURCE STR_OF("PAGE_GROUP_MANAGER")
+#define ITERATOR_ERROR_SOURCE STR_OF("PAGE_ITERATOR")
 
 bool page_iterator_has_next(struct page_iterator *self) {
   return self->inverse && (!self->started || self->next_page_id.bytes !=

@@ -4,12 +4,12 @@
 #include "database/private/database/domain/expression/expression_operators.h"
 #include <malloc.h>
 
-#define ERROR_SOURCE "EXPRESSION_OPERATOR"
-#define ERROR_TYPE "EXPRESSION_OPERATOR_ERROR"
+#define ERROR_SOURCE STR_OF("EXPRESSION_OPERATOR")
+#define ERROR_TYPE STR_OF("EXPRESSION_OPERATOR_ERROR")
 enum error_code { NON_NUMERIC_TYPE };
 
-static const char *const error_messages[] = {
-    [NON_NUMERIC_TYPE] = "Expression operator expected numeric value!"};
+static const str_t error_messages[] = {
+    [NON_NUMERIC_TYPE] = STR_OF("Expression operator expected numeric value!")};
 
 static struct error *error_self(enum error_code error_code) {
   return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},

@@ -7,7 +7,7 @@
 #include "database/private/database/domain/record/record.h"
 #include <stdio.h>
 
-#define ERROR_SOURCE "RECORD_PRINTER"
+#define ERROR_SOURCE STR_OF("RECORD_PRINTER")
 
 result_t schema_print(struct table_schema *schema) {
   ASSERT_NOT_NULL(schema, ERROR_SOURCE);

@@ -6,13 +6,13 @@
 #include "common/public/error/errors_common.h"
 #include <malloc.h>
 
-#define ERROR_SOURCE "RECORD"
-#define ERROR_TYPE "RECORD_ERROR"
+#define ERROR_SOURCE STR_OF("RECORD")
+#define ERROR_TYPE STR_OF("RECORD_ERROR")
 enum error_code { NON_MATCHING_TYPE, COLUMN_NOT_FOUND };
 
-const char *const error_messages[] = {
-    [NON_MATCHING_TYPE] = "Requested column type differs from expected",
-    [COLUMN_NOT_FOUND] = "No such column"};
+static const str_t error_messages[] = {
+    [NON_MATCHING_TYPE] = STR_OF("Requested column type differs from expected"),
+    [COLUMN_NOT_FOUND] = STR_OF("No such column")};
 
 static struct error *error_self(enum error_code error_code) {
   return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},

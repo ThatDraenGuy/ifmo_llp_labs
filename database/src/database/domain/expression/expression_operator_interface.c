@@ -4,7 +4,7 @@
 #include "database/private/database/domain/expression/expression_operator_interface.h"
 #include "common/public/error/errors_common.h"
 
-#define ERROR_SOURCE "EXPRESSION_OPERATOR"
+#define ERROR_SOURCE STR_OF("EXPRESSION_OPERATOR")
 
 column_type_t
 expression_operator_get_first_operand_type(struct i_expression_operator *self) {

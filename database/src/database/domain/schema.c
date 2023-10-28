@@ -6,12 +6,12 @@
 #include "common/public/error/errors_common.h"
 #include <malloc.h>
 
-#define ERROR_SOURCE "SCHEMA"
-#define ERROR_TYPE "SCHEMA_ERROR"
+#define ERROR_SOURCE STR_OF("SCHEMA")
+#define ERROR_TYPE STR_OF("SCHEMA_ERROR")
 enum error_code { SCHEMA_SIZE_EXCEEDED };
 
-static const char *const error_messages[] = {[SCHEMA_SIZE_EXCEEDED] =
-                                                 "Schema size was exceeded!"};
+static const str_t error_messages[] = {[SCHEMA_SIZE_EXCEEDED] =
+                                           STR_OF("Schema size was exceeded!")};
 
 static struct error *error_self(enum error_code error_code) {
   return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},

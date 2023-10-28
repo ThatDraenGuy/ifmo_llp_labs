@@ -6,11 +6,11 @@
 #include <malloc.h>
 #include <string.h>
 
-#define ERROR_SOURCE "STRING"
-#define ERROR_TYPE "STRING_ERROR"
+#define ERROR_SOURCE STR_OF("STRING")
+#define ERROR_TYPE STR_OF("STRING_ERROR")
 enum error_code { INVALID_DATA };
-static const char *const error_messages[] = {
-    [INVALID_DATA] = "Cannot create string reference from this data!"};
+static const str_t error_messages[] = {
+    [INVALID_DATA] = STR_OF("Cannot create string reference from this data!")};
 
 static struct error *error_self(enum error_code error_code) {
   return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},
@@ -22,7 +22,9 @@ static string_t string_new(const char *data, string_size_t size) {
   memcpy(heap_data, data, size.bytes + 1);
   return (string_t){._capacity = size, ._size = size, ._data = heap_data};
 }
-
+str_t str_of(char *c_str) {
+  return (str_t){._size = (string_size_t){strlen(c_str)}, ._data = c_str};
+}
 string_t str_into(str_t self) { return string_new(self._data, self._size); }
 string_size_t str_len(str_t self) { return self._size; }
 size_t str_pack_size(str_t self) {

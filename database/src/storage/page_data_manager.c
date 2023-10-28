@@ -9,11 +9,11 @@
 #include <memory.h>
 #include <string.h>
 
-#define ERROR_SOURCE "PAGE_DATA_MANAGER"
-#define ERROR_TYPE "PAGE_DATA_MANAGER_ERROR"
+#define ERROR_SOURCE STR_OF("PAGE_DATA_MANAGER")
+#define ERROR_TYPE STR_OF("PAGE_DATA_MANAGER_ERROR")
 enum error_code { ITEM_SIZE_EXCEEDED };
-static const char *const error_messages[] = {[ITEM_SIZE_EXCEEDED] =
-                                                 "Item size exceeded!"};
+static const str_t error_messages[] = {[ITEM_SIZE_EXCEEDED] =
+                                           STR_OF("Item size exceeded!")};
 
 bool item_iterator_has_next(struct item_iterator *self) {
   return !self->is_empty;

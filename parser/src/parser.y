@@ -133,8 +133,8 @@ column_id: IDENTIFIER {
 void
 yyerror(struct parser_ctx *ctx, char *fmt, ...)
 {
-  #define ERROR_SOURCE "PARSER"
-  #define ERROR_TYPE "PARSER_ERROR"
+  #define ERROR_SOURCE STR_OF("PARSER")
+  #define ERROR_TYPE STR_OF("PARSER_ERROR")
   // extern int yylineno;
   //
   // va_list ap;
@@ -149,6 +149,9 @@ yyerror(struct parser_ctx *ctx, char *fmt, ...)
   char *buf = malloc(sizeof(char) * 100);
   vsprintf(buf, fmt, args);
 
-  ctx->error = error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){0}, buf);
+  string_t msg = string_from(buf);
+  ctx->error = error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){0}, string_as_str(msg));
+  string_destroy(msg);
+
   ctx->is_error = true;
 }

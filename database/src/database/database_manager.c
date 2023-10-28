@@ -7,7 +7,7 @@
 #include "database/private/database/domain/statement/statement_interface.h"
 #include <malloc.h>
 
-#define ERROR_SOURCE "DATABASE_MANAGER"
+#define ERROR_SOURCE STR_OF("DATABASE_MANAGER")
 
 struct database_manager *database_manager_new() {
   return malloc(sizeof(struct database_manager));

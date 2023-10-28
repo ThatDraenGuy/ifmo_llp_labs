@@ -6,7 +6,7 @@
 #include "common/public/error/errors_common.h"
 #include <malloc.h>
 
-#define ERROR_SOURCE "STATEMENT"
+#define ERROR_SOURCE STR_OF("STATEMENT")
 
 struct statement_result *statement_result_new() {
   return malloc(sizeof(struct statement_result));

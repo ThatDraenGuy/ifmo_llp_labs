@@ -4,7 +4,7 @@
 #include "database/private/database/domain/expression/expression_interface.h"
 #include "common/public/error/errors_common.h"
 
-#define ERROR_SOURCE "EXPRESSION"
+#define ERROR_SOURCE STR_OF("EXPRESSION")
 
 column_type_t expression_get_type(struct i_expression *self) {
   return self->type;

@@ -4,9 +4,9 @@
 
 #include "common/public/error/errors_common.h"
 
-const char *const common_error_type = "COMMON_ERROR";
+const str_t common_error_type = STR_OF("COMMON_ERROR");
 
-const char *const common_error_messages[] = {
-    [ERR_COMMON_NULL_POINTER] = "Provided pointer is Null!",
-    [ERR_COMMON_ITER_OUT_OF_RANGE] = "Iterator is out of range!",
-    [ERR_INDEX_OUT_OF_BOUNDS] = "Index is out of bounds!"};
+const str_t common_error_messages[] = {
+    [ERR_COMMON_NULL_POINTER] = STR_OF("Provided pointer is Null!"),
+    [ERR_COMMON_ITER_OUT_OF_RANGE] = STR_OF("Iterator is out of range!"),
+    [ERR_INDEX_OUT_OF_BOUNDS] = STR_OF("Index is out of bounds!")};

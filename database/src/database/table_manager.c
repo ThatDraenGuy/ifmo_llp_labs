@@ -17,8 +17,8 @@
 #include <malloc.h>
 #include <string.h>
 
-#define ERROR_SOURCE "TABLE_MANAGER"
-#define ERROR_TYPE "TABLE_MANAGER_ERROR"
+#define ERROR_SOURCE STR_OF("TABLE_MANAGER")
+#define ERROR_TYPE STR_OF("TABLE_MANAGER_ERROR")
 
 enum error_code {
   META_PAGE_CONTENTS_MISSING,
@@ -27,11 +27,11 @@ enum error_code {
   TABLE_ALREADY_EXISTS
 };
 
-static const char *const error_messages[] = {
-    [META_PAGE_CONTENTS_MISSING] = "Meta information is missing!",
-    [META_PAGE_CONTENTS_INVALID] = "Meta information is invalid!",
-    [NO_RECORD_FOUND] = "No applicable record was found!",
-    [TABLE_ALREADY_EXISTS] = "table with this name already exists!"};
+static const str_t error_messages[] = {
+    [META_PAGE_CONTENTS_MISSING] = STR_OF("Meta information is missing!"),
+    [META_PAGE_CONTENTS_INVALID] = STR_OF("Meta information is invalid!"),
+    [NO_RECORD_FOUND] = STR_OF("No applicable record was found!"),
+    [TABLE_ALREADY_EXISTS] = STR_OF("Table with this name already exists!")};
 
 static struct error *error_self(enum error_code error_code) {
   return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},
@@ -522,7 +522,7 @@ result_t table_manager_create_table(struct table_manager *self,
   CATCH(error, {
     // if we encounter any error but NO_RECORD_FOUND, propagate main_item_it
     // otherwise everything is good
-    if (!(strcmp(error_get_type(error), ERROR_TYPE) == 0 &&
+    if (!(str_eq(error_get_type(error), ERROR_TYPE) &&
           error_get_code(error).bytes == NO_RECORD_FOUND)) {
       predicate_destroy(table_name_equal);
       THROW(error);

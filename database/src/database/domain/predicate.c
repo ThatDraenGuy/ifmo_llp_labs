@@ -6,13 +6,13 @@
 #include "common/public/error/errors_common.h"
 #include <malloc.h>
 
-#define ERROR_SOURCE "PREDICATE"
-#define ERROR_TYPE "PREDICATE_ERROR"
+#define ERROR_SOURCE STR_OF("PREDICATE")
+#define ERROR_TYPE STR_OF("PREDICATE_ERROR")
 enum error_code { NON_BOOL_EXPRESSION };
 
-static const char *const error_messages[] = {
+static const str_t error_messages[] = {
     [NON_BOOL_EXPRESSION] =
-        "Predicate expected to have a BOOL-type expression!"};
+        STR_OF("Predicate expected to have a BOOL-type expression!")};
 
 static struct error *error_self(enum error_code error_code) {
   return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},

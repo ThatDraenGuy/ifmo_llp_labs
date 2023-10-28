@@ -17,12 +17,12 @@
 #include <unistd.h>
 #endif
 
-#define ERROR_SOURCE "FILE_MANAGER"
-#define ERROR_TYPE "FILE_MANAGER_ERROR"
+#define ERROR_SOURCE STR_OF("FILE_MANAGER")
+#define ERROR_TYPE STR_OF("FILE_MANAGER_ERROR")
 
 static struct error *error_self() {
   return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){errno},
-                   strerror(errno));
+                   str_of(strerror(errno)));
 }
 
 struct file_manager *file_manager_new() {

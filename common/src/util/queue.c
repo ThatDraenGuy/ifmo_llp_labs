@@ -6,7 +6,7 @@
 #include <malloc.h>
 #include <memory.h>
 
-#define ERROR_SOURCE "QUEUE"
+#define ERROR_SOURCE STR_OF("QUEUE")
 
 struct queue *queue_new() { return malloc(sizeof(struct queue)); }
 

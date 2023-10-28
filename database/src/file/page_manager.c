@@ -7,7 +7,7 @@
 #include <malloc.h>
 #include <memory.h>
 
-#define ERROR_SOURCE "PAGE_RESOLVER"
+#define ERROR_SOURCE STR_OF("PAGE_RESOLVER")
 
 static size_t cache_entry_size(struct page_manager *self) {
   size_t page_size = page_manager_get_page_size(self);

@@ -11,14 +11,14 @@
 #include <malloc.h>
 #include <stdarg.h>
 
-#define ERROR_SOURCE "RECORD_VIEW"
-#define ERROR_TYPE "RECORD_VIEW_ERROR"
+#define ERROR_SOURCE STR_OF("RECORD_VIEW")
+#define ERROR_TYPE STR_OF("RECORD_VIEW_ERROR")
 
 enum error_code { INCORRECT_VALUE_AMOUNT, INCORRECT_VALUE_TYPE };
 
-static const char *const error_messages[] = {
-    [INCORRECT_VALUE_AMOUNT] = "Incorrect value amount!",
-    [INCORRECT_VALUE_TYPE] = "Incorrect value type!"};
+static const str_t error_messages[] = {
+    [INCORRECT_VALUE_AMOUNT] = STR_OF("Incorrect value amount!"),
+    [INCORRECT_VALUE_TYPE] = STR_OF("Incorrect value type!")};
 
 static struct error *error_self(enum error_code error_code) {
   return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},

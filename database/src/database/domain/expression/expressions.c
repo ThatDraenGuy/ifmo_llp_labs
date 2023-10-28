@@ -5,12 +5,12 @@
 #include "database/private/database/domain/expression/expressions.h"
 #include <malloc.h>
 
-#define ERROR_SOURCE "EXPRESSION"
-#define ERROR_TYPE "EXPRESSION_ERROR"
+#define ERROR_SOURCE STR_OF("EXPRESSION")
+#define ERROR_TYPE STR_OF("EXPRESSION_ERROR")
 enum error_code { NON_MATCHING_TYPES };
 
-static const char *const error_messages[] = {
-    [NON_MATCHING_TYPES] = "Expressions have different return types!"};
+static const str_t error_messages[] = {
+    [NON_MATCHING_TYPES] = STR_OF("Expressions have different return types!")};
 
 static struct error *error_self(enum error_code error_code) {
   return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},

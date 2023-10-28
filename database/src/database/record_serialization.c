@@ -6,13 +6,13 @@
 #include "database/private/database/domain/record/record.h"
 #include <malloc.h>
 
-#define ERROR_SOURCE "RECORD_SERIALIZATION"
-#define ERROR_TYPE "RECORD_SERIALIZATION_ERROR"
+#define ERROR_SOURCE STR_OF("RECORD_SERIALIZATION")
+#define ERROR_TYPE STR_OF("RECORD_SERIALIZATION_ERROR")
 enum error_code { INCORRECT_ITEM_SIZE, INVALID_DATA };
 
-static const char *const error_messages[] = {
-    [INCORRECT_ITEM_SIZE] = "Item is too small!",
-    [INVALID_DATA] = "Item data is invalid!"};
+static const str_t error_messages[] = {
+    [INCORRECT_ITEM_SIZE] = STR_OF("Item is too small!"),
+    [INVALID_DATA] = STR_OF("Item data is invalid!")};
 
 static struct error *error_self(enum error_code error_code) {
   return error_new(ERROR_SOURCE, ERROR_TYPE, (error_code_t){error_code},

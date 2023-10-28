@@ -7,13 +7,13 @@
 #include <malloc.h>
 #include <memory.h>
 
-#define ERROR_SOURCE "PAGE_RESOLVER"
-#define ERROR_TYPE "PAGE_RESOLVER_ERROR"
+#define ERROR_SOURCE STR_OF("PAGE_RESOLVER")
+#define ERROR_TYPE STR_OF("PAGE_RESOLVER_ERROR")
 
 enum error_code { INVALID_HEADER = 0 };
 
-static const char *const error_messages[] = {[INVALID_HEADER] =
-                                                 "File header is invalid!"};
+static const str_t error_messages[] = {[INVALID_HEADER] =
+                                           STR_OF("File header is invalid!")};
 
 static uint32_t resolve_page_offset(struct page_resolver *self,
                                     size_t page_size, page_id_t page_id) {
