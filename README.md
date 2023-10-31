@@ -1,21 +1,22 @@
-# Low Level Programming - LAB 1
+# Low Level Programming - LAB 1 & 2
 
 ## Вариант
 
 - Реляционные таблицы
 - Чтение/Запись
+- SQL
 
-## Отчёт
+## Отчёты
 
-[В директории report](report/Report.pdf)
+В директории report  
+[Lab 1](report/report-lab1.pdf)  
+[Lab 2](report/report-lab2.pdf)
 
 ## Сборка и запуск проекта
 
 ### Linux
 
 Под линукс составлен скрипт `build-and-test.sh`, который соберёт проект и запустит тесты.
-
-Альтернативно проект может быть собран и запущен вручную следующими командами:
 
 ### Windows
 
