@@ -50,6 +50,11 @@
   yylval.node = ast_node_string_new(Chars);                                    \
   return STRING;
 
+#define HANDLE_COLUMN_TYPE(Type)                                               \
+  debug_lex(yytext, #Type);                                                    \
+  yylval.node = ast_node_column_type_new(Type);                                \
+  return COLUMN_TYPE;
+
 #define HANDLE_IDENTIFIER(Text)                                                \
   debug_lex(yytext, "Id");                                                     \
   yylval.node = ast_node_id_new(Text);                                         \

@@ -264,6 +264,34 @@ struct i_ast_node *ast_node_delete_stmt_new(struct i_ast_node *from,
                                                   STR_OF("DELETE STATEMENT"));
 }
 
+struct i_ast_node *
+ast_node_create_table_stmt_new(struct i_ast_node *table_id,
+                               struct i_ast_node *columns_defs) {
+  return (struct i_ast_node *)double_ast_node_new(
+      table_id, columns_defs, STR_OF("CREATE TABLE STATEMENT"));
+}
+
+struct i_ast_node *ast_node_drop_table_stmt_new(struct i_ast_node *table_id) {
+  return (struct i_ast_node *)simple_ast_node_new(
+      table_id, STR_OF("DROP TABLE STATEMENT"));
+}
+
+struct i_ast_node *ast_node_columns_defs_new() {
+  return (struct i_ast_node *)complex_ast_node_new(STR_OF("COLUMN DEFS"));
+}
+struct ast_node_columns_defs *
+ast_node_columns_defs_add(struct ast_node_columns_defs *self,
+                          struct i_ast_node *column_def) {
+  complex_ast_node_add(&self->node, column_def);
+  return self;
+}
+
+struct i_ast_node *ast_node_column_def_new(struct i_ast_node *column_id,
+                                           struct i_ast_node *column_type) {
+  return (struct i_ast_node *)double_ast_node_new(column_id, column_type,
+                                                  STR_OF("COLUMN DEF"));
+}
+
 struct i_ast_node *ast_node_updates_new() {
   return (struct i_ast_node *)complex_ast_node_new(STR_OF("UPDATES"));
 }
@@ -514,6 +542,59 @@ struct i_ast_node *ast_node_logical_oper_new(logical_operator_t oper) {
   self->parent.name = STR_OF("LOGICAL OPER");
   self->parent.equals_impl = ast_node_logical_oper_equals;
   self->parent.print_at_level_impl = ast_node_logical_oper_print;
+  self->parent.destroy_impl = common_ast_node_destroy;
+
+  return (struct i_ast_node *)self;
+}
+
+// column type
+static bool ast_node_column_type_equals(struct i_ast_node *node1,
+                                        struct i_ast_node *node2) {
+  if (!common_ast_node_equals(node1, node2))
+    return false;
+
+  struct ast_node_column_type *self = (struct ast_node_column_type *)node1;
+  struct ast_node_column_type *other = (struct ast_node_column_type *)node2;
+
+  return self->type == other->type;
+}
+
+static void ast_node_column_type_print(struct i_ast_node *node,
+                                       size_t current_level) {
+  struct ast_node_column_type *self = (struct ast_node_column_type *)node;
+
+  PRINT_INDENT(current_level)
+  char *value;
+  switch (self->type) {
+  case COLUMN_TYPE_INT32:
+    value = "INT32";
+    break;
+  case COLUMN_TYPE_UINT64:
+    value = "UINT64";
+    break;
+  case COLUMN_TYPE_FLOAT:
+    value = "FLOAT";
+    break;
+  case COLUMN_TYPE_STRING:
+    value = "STRING";
+    break;
+  case COLUMN_TYPE_BOOL:
+    value = "BOOL";
+    break;
+  }
+
+  printf("COLUMN TYPE: %s\n", value);
+}
+
+struct i_ast_node *ast_node_column_type_new(column_type_t type) {
+  struct ast_node_column_type *self =
+      malloc(sizeof(struct ast_node_column_type));
+
+  self->type = type;
+
+  self->parent.name = STR_OF("COLUMN TYPE");
+  self->parent.equals_impl = ast_node_column_type_equals;
+  self->parent.print_at_level_impl = ast_node_column_type_print;
   self->parent.destroy_impl = common_ast_node_destroy;
 
   return (struct i_ast_node *)self;

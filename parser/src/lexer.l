@@ -24,6 +24,15 @@ WHERE           { HANDLE_TOKEN(WHERE) }
 ON              { HANDLE_TOKEN(ON) }
 JOIN            { HANDLE_TOKEN(JOIN) }
 
+    /* column types */
+INT32 |
+INT |
+INTEGER         { HANDLE_COLUMN_TYPE(COLUMN_TYPE_INT32) }
+FLOAT           { HANDLE_COLUMN_TYPE(COLUMN_TYPE_FLOAT) }
+VARCHAR         { HANDLE_COLUMN_TYPE(COLUMN_TYPE_STRING) }
+BOOL |
+BOOLEAN         { HANDLE_COLUMN_TYPE(COLUMN_TYPE_BOOL) }
+
     /* numbers */
 -?[0-9]+	    { HANDLE_INT(atoi(yytext)) }
 -?[0-9]+"."[0-9]* |

@@ -41,6 +41,7 @@ void yy_end_lexical_scan();
 %token <node> STRING
 %token <node> BOOL
 %token <node> IDENTIFIER
+%token <node> COLUMN_TYPE
 %token <node> ARITHMETIC_OPERATOR
 
 %left <node> AND_OP
@@ -49,7 +50,7 @@ void yy_end_lexical_scan();
 %left <node> COMPARISON_OPERATOR
 
 
-%type <node> statement select_statement insert_statement update_statement delete_statement updates update values_list values from joins join where predicate expression literal member_id table_id column_id
+%type <node> statement select_statement insert_statement update_statement delete_statement create_table_statement drop_table_statement columns_defs column_def updates update values_list values from joins join where predicate expression literal member_id table_id column_id
 
 %%
 
@@ -68,11 +69,21 @@ statement: select_statement ';' {
       ctx->root = $$;
       ctx->is_error = false;
       YYACCEPT;
- } | delete_statement ';' {
+} | delete_statement ';' {
     $$ = ast_node_stmt_new($1);
     ctx->root = $$;
     ctx->is_error = false;
     YYACCEPT;
+} | create_table_statement ';' {
+      $$ = ast_node_stmt_new($1);
+      ctx->root = $$;
+      ctx->is_error = false;
+      YYACCEPT;
+} | drop_table_statement ';' {
+     $$ = ast_node_stmt_new($1);
+     ctx->root = $$;
+     ctx->is_error = false;
+     YYACCEPT;
 };
 
 select_statement: SELECT from joins where {
@@ -100,6 +111,25 @@ delete_statement: DELETE from where {
 } | DELETE from {
     $$ = ast_node_delete_stmt_new($2, NULL);
 };
+
+create_table_statement: CREATE TABLE table_id '(' columns_defs ')' {
+    $$ = ast_node_create_table_stmt_new($3, $5);
+}
+
+drop_table_statement: DROP TABLE table_id {
+    $$ = ast_node_drop_table_stmt_new($3);
+}
+
+columns_defs: column_def {
+    $$ = ast_node_columns_defs_new();
+    ast_node_columns_defs_add((struct ast_node_columns_defs *)$$, $1);
+} | columns_defs ',' column_def {
+    ast_node_columns_defs_add((struct ast_node_columns_defs *)$$, $3);
+}
+
+column_def: column_id COLUMN_TYPE {
+    $$ = ast_node_column_def_new($1, $2);
+}
 
 updates: update {
     $$ = ast_node_updates_new();

@@ -53,6 +53,22 @@ struct ast_node_delete_stmt {
   struct double_ast_node node;
 };
 
+struct ast_node_create_table_stmt {
+  struct double_ast_node node;
+};
+
+struct ast_node_drop_table_stmt {
+  struct simple_ast_node node;
+};
+
+struct ast_node_columns_defs {
+  struct complex_ast_node node;
+};
+
+struct ast_node_column_def {
+  struct double_ast_node node;
+};
+
 struct ast_node_updates {
   struct complex_ast_node node;
 };
@@ -125,6 +141,11 @@ struct ast_node_table_id {
 
 struct ast_node_column_id {
   struct simple_ast_node node;
+};
+
+struct ast_node_column_type {
+  struct i_ast_node parent;
+  column_type_t type;
 };
 
 struct ast_node_int {
