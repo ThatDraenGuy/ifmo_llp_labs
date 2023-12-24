@@ -32,7 +32,8 @@ static result_t second_table(struct database_manager *database_manager,
 
     for (uint64_t id = 0; id < record_num; id++) {
       uint64_t ref_id = record_num - 1 - id;
-      record_group_insert(values, 2, COLUMN_VALUE(id), COLUMN_VALUE(ref_id));
+      record_group_insert(values, 2, INSERT_COL_VAL(id),
+                          INSERT_COL_VAL(ref_id));
     }
 
     struct i_statement *insert = insert_statement_of(TABLE_NAME_2, values);

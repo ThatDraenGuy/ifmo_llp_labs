@@ -11,7 +11,7 @@
 #include <stdbool.h>
 
 struct column_schema;
-column_type_t column_schema_get_type(struct column_schema *self);
+column_type_t column_schema_get_col_type(struct column_schema *self);
 str_t column_schema_get_name(struct column_schema *self);
 str_t column_schema_get_table_name(struct column_schema *self);
 

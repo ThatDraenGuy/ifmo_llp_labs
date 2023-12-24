@@ -22,9 +22,9 @@ static result_t test(struct database_manager *database_manager) {
       record_group_ctor(values, 1, schema);
       for (uint64_t index = 0; index < batch_size; index++) {
         uint64_t id = batch_size * iter_index + index;
-        record_group_insert(values, 3, COLUMN_VALUE(id),
-                            COLUMN_VALUE((bool)id % 3 == 0),
-                            COLUMN_VALUE((float)id / 3.f));
+        record_group_insert(values, 3, INSERT_COL_VAL(id),
+                            INSERT_COL_VAL((bool)id % 3 == 0),
+                            INSERT_COL_VAL((float)id / 3.f));
       }
 
       struct i_statement *insert = insert_statement_of(TABLE_NAME, values);

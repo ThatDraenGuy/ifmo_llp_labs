@@ -41,8 +41,8 @@ result_t populate_common_table(struct database_manager *database_manager,
     for (uint64_t id = 0; id < record_num; id++) {
       bool status = id % 3 == 0;
       float num = (float)id / 3.f;
-      record_group_insert(values, 3, COLUMN_VALUE(id),
-                          COLUMN_VALUE((bool)status), COLUMN_VALUE(num));
+      record_group_insert(values, 3, INSERT_COL_VAL(id),
+                          INSERT_COL_VAL((bool)status), INSERT_COL_VAL(num));
     }
 
     struct i_statement *insert = insert_statement_of(TABLE_NAME, values);

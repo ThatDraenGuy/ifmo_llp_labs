@@ -246,9 +246,10 @@ struct i_ast_node *ast_node_select_stmt_new(struct i_ast_node *from,
 }
 
 struct i_ast_node *ast_node_insert_stmt_new(struct i_ast_node *table_id,
+                                            struct i_ast_node *col_names,
                                             struct i_ast_node *values_list) {
-  return (struct i_ast_node *)double_ast_node_new(table_id, values_list,
-                                                  STR_OF("INSERT STATEMENT"));
+  return (struct i_ast_node *)triple_ast_node_new(
+      table_id, col_names, values_list, STR_OF("INSERT STATEMENT"));
 }
 
 struct i_ast_node *ast_node_update_stmt_new(struct i_ast_node *table_id,
@@ -305,6 +306,16 @@ struct i_ast_node *ast_node_update_new(struct i_ast_node *column_id,
                                        struct i_ast_node *expression) {
   return (struct i_ast_node *)double_ast_node_new(column_id, expression,
                                                   STR_OF("UPDATE"));
+}
+
+struct i_ast_node *ast_node_col_names_new() {
+  return (struct i_ast_node *)complex_ast_node_new(STR_OF("COL NAMES"));
+}
+struct ast_node_col_names *
+ast_node_col_names_add(struct ast_node_col_names *self,
+                       struct i_ast_node *column_id) {
+  complex_ast_node_add(&self->node, column_id);
+  return self;
 }
 
 struct i_ast_node *ast_node_values_list_new() {

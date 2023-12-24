@@ -24,7 +24,7 @@ static void clear_record_value(struct record *self, size_t index) {
   struct column_schema *column_schema =
       self->column_schema_group->schemas[index];
 
-  if (column_schema_get_type(column_schema) == COLUMN_TYPE_STRING &&
+  if (column_schema_get_col_type(column_schema) == COLUMN_TYPE_STRING &&
       string_is_null(value.string_value)) {
     string_destroy(value.string_value);
     value.string_value = STRING_NULL;
@@ -53,7 +53,7 @@ result_t record_set_value(struct record *self, str_t table_name,
 
   clear_record_value(self, column_index);
 
-  if (column_schema_get_type(
+  if (column_schema_get_col_type(
           self->column_schema_group->schemas[column_index]) ==
       COLUMN_TYPE_STRING) {
     self->values[column_index].string_value = string_clone(value.string_value);
@@ -85,7 +85,7 @@ result_t record_get_value(struct record *self, str_t table_name,
     CATCH(error, THROW(error))                                                 \
     struct column_schema *schema =                                             \
         self->column_schema_group->schemas[column_index];                      \
-    if (column_schema_get_type(schema) != ColumnTypeValue)                     \
+    if (column_schema_get_col_type(schema) != ColumnTypeValue)                 \
       THROW(error_self(NON_MATCHING_TYPE));                                    \
                                                                                \
     *result = ValueMapFunc(self->values[column_index].TypeName##_value);       \
@@ -109,9 +109,9 @@ void record_clear_all(struct record *self) {
 }
 
 struct record *record_new(struct column_schema_group *column_schema_group) {
-  struct record *self =
-      calloc(1, sizeof(struct record) +
-             sizeof(column_value_t) * column_schema_group->columns_amount);
+  struct record *self = calloc(1, sizeof(struct record) +
+                                      sizeof(column_value_t) *
+                                          column_schema_group->columns_amount);
   self->column_schema_group = column_schema_group;
   return self;
 }

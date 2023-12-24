@@ -21,6 +21,7 @@ struct i_ast_node *ast_node_select_stmt_new(struct i_ast_node *from,
 
 struct ast_node_insert_stmt;
 struct i_ast_node *ast_node_insert_stmt_new(struct i_ast_node *table_id,
+                                            struct i_ast_node *col_names,
                                             struct i_ast_node *values_list);
 
 struct ast_node_update_stmt;
@@ -58,6 +59,12 @@ struct ast_node_updates *ast_node_updates_add(struct ast_node_updates *self,
 struct ast_node_update;
 struct i_ast_node *ast_node_update_new(struct i_ast_node *column_id,
                                        struct i_ast_node *expression);
+
+struct ast_node_col_names;
+struct i_ast_node *ast_node_col_names_new();
+struct ast_node_col_names *
+ast_node_col_names_add(struct ast_node_col_names *self,
+                       struct i_ast_node *column_id);
 
 struct ast_node_values_list;
 struct i_ast_node *ast_node_values_list_new();

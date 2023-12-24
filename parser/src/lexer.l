@@ -84,7 +84,7 @@ NOT             { HANDLE_LOGICAL(NOT, NOT_OP) }
 ")"                     { HANDLE_SYMBOL(')') }
 ","                     { HANDLE_SYMBOL(',') }
 
-.                      { printf("mystery character: %s\n", yytext); }
+.                      { printf("mystery character: %s\n", yytext); return *yytext; }
 
 %%
 void yy_set_input_string(const char* in) {

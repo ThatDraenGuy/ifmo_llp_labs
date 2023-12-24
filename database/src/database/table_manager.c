@@ -522,7 +522,7 @@ result_t table_manager_create_table(struct table_manager *self,
   CATCH(error, {
     // if we encounter any error but NO_RECORD_FOUND, propagate main_item_it
     // otherwise everything is good
-    if (!(str_eq(error_get_type(error), ERROR_TYPE) &&
+    if (!(str_eq(app_error_get_type(error), ERROR_TYPE) &&
           error_get_code(error).bytes == NO_RECORD_FOUND)) {
       predicate_destroy(table_name_equal);
       THROW(error);
@@ -553,10 +553,10 @@ result_t table_manager_create_table(struct table_manager *self,
   struct record_group *table_data_group = record_group_new();
   record_group_ctor(table_data_group, 1, self->table_data_table->table_schema);
 
-  record_group_insert(table_data_group, 4, COLUMN_VALUE(table_id),
-                      COLUMN_VALUE(table_schema_get_name(schema)),
-                      COLUMN_VALUE(table_group.bytes),
-                      COLUMN_VALUE(table_schema_get_column_amount(schema)));
+  record_group_insert(table_data_group, 4, INSERT_COL_VAL(table_id),
+                      INSERT_COL_VAL(table_schema_get_name(schema)),
+                      INSERT_COL_VAL(table_group.bytes),
+                      INSERT_COL_VAL(table_schema_get_column_amount(schema)));
 
   // save table record to the tables table
   TRY(table_manager_insert(self, self->table_data_table, table_data_group));
@@ -582,9 +582,9 @@ result_t table_manager_create_table(struct table_manager *self,
     record_group_ctor(column_data_group, 1,
                       self->table_columns_table->table_schema);
     record_group_insert(
-        column_data_group, 3, COLUMN_VALUE(table_id),
-        COLUMN_VALUE(column_schema_get_name(column_schema)),
-        COLUMN_VALUE((uint64_t)column_schema_get_type(column_schema)));
+        column_data_group, 3, INSERT_COL_VAL(table_id),
+        INSERT_COL_VAL(column_schema_get_name(column_schema)),
+        INSERT_COL_VAL((uint64_t)column_schema_get_col_type(column_schema)));
 
     // save main_item_it to columns table
     TRY(table_manager_insert(self, self->table_columns_table,

@@ -68,7 +68,7 @@ static result_t deserialize_column(item_t item, size_t *item_offset,
                                    struct column_schema *column_schema,
                                    size_t column_index, struct record *target) {
   column_value_t column_value = {0};
-  switch (column_schema_get_type(column_schema)) {
+  switch (column_schema_get_col_type(column_schema)) {
   case COLUMN_TYPE_UINT64:
     TRY(read_uint64(item, item_offset, &column_value.uint64_value));
     CATCH(error, THROW(error))
@@ -181,7 +181,7 @@ void record_serialize_into(struct record *record, item_t target) {
   size_t item_offset = 0;
   for (size_t index = 0; index < columns_amount; index++) {
     column_type_t type =
-        column_schema_get_type(record->column_schema_group->schemas[index]);
+        column_schema_get_col_type(record->column_schema_group->schemas[index]);
     column_value_t value = record->values[index];
     serialize_column(target, &item_offset, type, value);
   }
@@ -193,7 +193,7 @@ item_t record_serialize(struct record *record) {
   size_t item_size = 0;
   for (size_t index = 0; index < columns_amount; index++) {
     column_type_t type =
-        column_schema_get_type(record->column_schema_group->schemas[index]);
+        column_schema_get_col_type(record->column_schema_group->schemas[index]);
     column_value_t value = record->values[index];
     calculate_column_size(value, type, &item_size);
   }

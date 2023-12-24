@@ -16,7 +16,7 @@ struct error;
 struct error *error_new(str_t error_source, str_t error_type,
                         error_code_t error_code, str_t error_message);
 str_t error_get_source(struct error *self);
-str_t error_get_type(struct error *self);
+str_t app_error_get_type(struct error *self);
 error_code_t error_get_code(struct error *self);
 str_t error_get_message(struct error *self);
 void error_destroy(struct error *self);

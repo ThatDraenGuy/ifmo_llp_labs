@@ -18,7 +18,7 @@ static struct error *error_self(enum error_code error_code) {
                    error_messages[error_code]);
 }
 
-column_type_t column_schema_get_type(struct column_schema *self) {
+column_type_t column_schema_get_col_type(struct column_schema *self) {
   return self->type;
 }
 

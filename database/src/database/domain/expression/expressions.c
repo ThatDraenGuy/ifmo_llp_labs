@@ -127,12 +127,12 @@ static result_t operator_expression_get(struct i_expression *expression,
                                         column_value_t *result) {
   struct operator_expression *self = (struct operator_expression *)expression;
 
-  column_type_t first_type = expression_get_type(self->first);
+  column_type_t first_type = expression_get_expr_type(self->first);
   if (first_type !=
       expression_operator_get_first_operand_type(self->expression_operator))
     THROW(error_self(NON_MATCHING_TYPES));
 
-  column_type_t second_type = expression_get_type(self->second);
+  column_type_t second_type = expression_get_expr_type(self->second);
   if (second_type !=
       expression_operator_get_second_operand_type(self->expression_operator))
     THROW(error_self(NON_MATCHING_TYPES));

@@ -6,7 +6,7 @@
 
 #define ERROR_SOURCE STR_OF("EXPRESSION")
 
-column_type_t expression_get_type(struct i_expression *self) {
+column_type_t expression_get_expr_type(struct i_expression *self) {
   return self->type;
 }
 

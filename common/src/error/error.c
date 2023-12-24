@@ -17,7 +17,7 @@ struct error *error_new(str_t error_source, str_t error_type,
   return err;
 }
 
-str_t error_get_type(struct error *self) {
+str_t app_error_get_type(struct error *self) {
   return string_as_str(self->error_type);
 }
 

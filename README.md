@@ -1,16 +1,18 @@
-# Low Level Programming - LAB 1 & 2
+# Low Level Programming - LAB 1, 2 & 3
 
 ## Вариант
 
 - Реляционные таблицы
 - Чтение/Запись
 - SQL
+- Apache Thrift
 
 ## Отчёты
 
 В директории report  
 [Lab 1](report/report-lab1.pdf)  
-[Lab 2](report/report-lab2.pdf)
+[Lab 2](report/report-lab2.pdf)  
+[Lab 3](report/report-lab3.pdf)
 
 ## Сборка и запуск проекта
 

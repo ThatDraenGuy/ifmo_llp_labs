@@ -42,7 +42,7 @@ struct ast_node_select_stmt {
 };
 
 struct ast_node_insert_stmt {
-  struct double_ast_node node;
+  struct triple_ast_node node;
 };
 
 struct ast_node_update_stmt {
@@ -74,6 +74,10 @@ struct ast_node_updates {
 };
 struct ast_node_update {
   struct double_ast_node node;
+};
+
+struct ast_node_col_names {
+  struct complex_ast_node node;
 };
 
 struct ast_node_values_list {

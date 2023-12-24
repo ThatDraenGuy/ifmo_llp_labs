@@ -27,7 +27,7 @@ void record_update_ctor(struct record_update *self, str_t table_name,
     struct i_expression *expression = va_arg(args, struct i_expression *);
     self->expressions[index] = expression;
     self->schemas[index] = malloc(sizeof(struct column_schema));
-    self->schemas[index]->type = expression_get_type(expression);
+    self->schemas[index]->type = expression_get_expr_type(expression);
     self->schemas[index]->name = str_into(column_name);
     self->schemas[index]->table_name = string_as_str(self->table_name);
   }

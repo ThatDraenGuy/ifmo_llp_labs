@@ -50,7 +50,7 @@ void yy_end_lexical_scan();
 %left <node> COMPARISON_OPERATOR
 
 
-%type <node> statement select_statement insert_statement update_statement delete_statement create_table_statement drop_table_statement columns_defs column_def updates update values_list values from joins join where predicate expression literal member_id table_id column_id
+%type <node> statement select_statement insert_statement update_statement delete_statement create_table_statement drop_table_statement columns_defs column_def updates update col_names values_list values from joins join where predicate expression literal member_id table_id column_id
 
 %%
 
@@ -96,8 +96,8 @@ select_statement: SELECT from joins where {
     $$ = ast_node_select_stmt_new($2, NULL, NULL);
 };
 
-insert_statement: INSERT_INTO table_id VALUES values_list {
-    $$ = ast_node_insert_stmt_new($2, $4);
+insert_statement: INSERT_INTO table_id '(' col_names ')' VALUES values_list {
+    $$ = ast_node_insert_stmt_new($2, $4, $7);
 }
 
 update_statement: UPDATE table_id SET updates where {
@@ -144,6 +144,13 @@ update: column_id COMPARISON_OPERATOR expression {
         YYABORT;
     }
     $$ = ast_node_update_new($1, $3);
+}
+
+col_names: column_id {
+    $$ = ast_node_col_names_new();
+    ast_node_col_names_add((struct ast_node_col_names *)$$, $1);
+} | col_names ',' column_id {
+    ast_node_col_names_add((struct ast_node_col_names *)$$, $3);
 }
 
 values_list: '(' values ')' {
@@ -213,6 +220,8 @@ literal: INT {
 
 member_id: table_id '.' column_id {
     $$ = ast_node_member_id_new($1, $3);
+} | column_id {
+    $$ = ast_node_member_id_new(NULL, $1);
 };
 
 table_id: IDENTIFIER {

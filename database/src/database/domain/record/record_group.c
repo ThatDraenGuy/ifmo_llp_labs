@@ -93,12 +93,12 @@ result_t record_group_insert(struct record_group *self, size_t values_num,
     column_type_t arg_type = va_arg(args, column_type_t);
 
     struct column_schema *schema = self->column_schema_group.schemas[index];
-    if (arg_type != column_schema_get_type(schema)) {
+    if (arg_type != column_schema_get_col_type(schema)) {
       THROW(error_self(INCORRECT_VALUE_TYPE));
     }
 
     column_value_t *value = &record->values[index];
-    switch (column_schema_get_type(schema)) {
+    switch (column_schema_get_col_type(schema)) {
     case COLUMN_TYPE_INT32:
       *value = (column_value_t){.int32_value = va_arg(args, int32_t)};
       break;

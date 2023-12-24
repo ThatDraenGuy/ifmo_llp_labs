@@ -35,7 +35,7 @@ result_t record_print(struct record *record) {
     column_value_t value = record->values[index];
 
     //    printf("%s\t", str_get_c_string(column_schema_get_name(schema)));
-    switch (column_schema_get_type(schema)) {
+    switch (column_schema_get_col_type(schema)) {
     case COLUMN_TYPE_INT32:
       printf("%d\t\t\t", value.int32_value);
       break;

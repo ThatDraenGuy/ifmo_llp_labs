@@ -24,7 +24,7 @@ typedef union {
   bool bool_value;
 } column_value_t;
 
-#define COLUMN_VALUE(Value)                                                    \
+#define INSERT_COL_VAL(Value)                                                  \
   _Generic(Value,                                                              \
       int32_t: COLUMN_TYPE_INT32,                                              \
       uint64_t: COLUMN_TYPE_UINT64,                                            \

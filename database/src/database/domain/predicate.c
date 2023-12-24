@@ -23,7 +23,7 @@ result_t predicate_apply(struct predicate *self, struct record *record,
                          bool *result) {
   ASSERT_NOT_NULL(self, ERROR_SOURCE);
 
-  if (expression_get_type(self->expression) != COLUMN_TYPE_BOOL)
+  if (expression_get_expr_type(self->expression) != COLUMN_TYPE_BOOL)
     THROW(error_self(NON_BOOL_EXPRESSION));
 
   column_value_t result_value = {0};
